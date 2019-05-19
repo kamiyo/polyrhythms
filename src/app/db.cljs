@@ -4,11 +4,13 @@
 
 (s/def ::tempo number?)
 (s/def ::is-playing? boolean?)
-(s/def ::next-note-time number?)
+(s/def ::last-beat-time number?)
+(s/def ::divisions number?)
+(s/def ::microbeat number?)
 (s/def ::subdivision
   (s/keys :req-un
           [::divisions
-           ::next-note-time]))
+           ::microbeat]))
 
 (s/def ::numerator ::subdivision)
 (s/def ::denominator ::subdivision)
@@ -18,12 +20,14 @@
           [::numerator
            ::denominator
            ::tempo
+           ::last-beat-time
            ::is-playing?]))
 
 (def default-db
   {:numerator {:divisions 3
-               :next-note-time 0}
+               :microbeat 0}
    :denominator {:divisions 2
-                 :next-note-time 0}
+                 :microbeat 0}
+   :last-beat-time 0
    :tempo 60
    :is-playing? false})

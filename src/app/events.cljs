@@ -1,5 +1,5 @@
 (ns app.events
-  (:require [re-frame.core :refer [reg-event-db reg-event-fx reg-fx after]]
+  (:require [re-frame.core :refer [reg-event-db reg-event-fx reg-fx after debug]]
             [app.db :refer [default-db]]
             [cljs-bach.synthesis :as a]
             [cljs.spec.alpha :as s]))
@@ -24,37 +24,48 @@
  (fn [cofx [_ new-values]]
    (let [{:keys [divisions which]} new-values]
      {:db (assoc-in (:db cofx) [which :divisions] (max 1 (js/parseInt divisions)))
-      :dispatch [:change-all-next-note-times (a/current-time app.sound/context)]})))
+      :dispatch [:change-last-beat-time (a/current-time app.sound/context)]})))
 
 (reg-event-db
- :change-next-note-time
- [check-spec-interceptor]
- (fn [db [_ new-values]]
-   (let [{:keys [next-note-time which]} new-values]
-     (assoc-in db [which :next-note-time] next-note-time))))
+ :inc-microbeat
+ [(when ^boolean goog.DEBUG debug) check-spec-interceptor]
+ (fn [db [_ which]]
+   (js/console.log which)
+   (update-in db [which :microbeat] inc)))
 
 (reg-event-db
- :change-all-next-note-times
+ :reset-microbeats
  [check-spec-interceptor]
- (fn [db [_ value]]
-   (js/console.log value)
+ (fn [db [_ _]]
    (-> db
-       (assoc-in [:numerator :next-note-time] value)
-       (assoc-in [:denominator :next-note-time] value))))
+       (assoc-in [:numerator :microbeat] 0)
+       (assoc-in [:denominator :microbeat] 0))))
 
-(reg-fx
- :play-once
- (fn [_]
-   (app.sound/play-once (a/current-time app.sound/context) 1980)
-   (app.sound/play-once (a/current-time app.sound/context) 1320)))
+(reg-event-db
+ :normalize-microbeats
+ [(when ^boolean goog.DEBUG debug) check-spec-interceptor]
+ (fn [db [_ _]]
+   (let [{num-microbeat :microbeat
+          num-divisions :divisions} (:numerator db)
+         {den-microbeat :microbeat
+          den-divisions :divisions} (:denominator db)]
+     (-> db
+         (assoc-in [:numerator :microbeat] (mod num-microbeat num-divisions))
+         (assoc-in [:denominator :microbeat] (mod den-microbeat den-divisions))
+         (update-in [:last-beat-time] + (app.sound/get-seconds-per-beat (:tempo db)))))))
+
+(reg-event-db
+ :change-last-beat-time
+ [check-spec-interceptor]
+ (fn [db [_ new-value]]
+   (assoc db :last-beat-time new-value)))
 
 (reg-event-fx
  :check-diff
  [check-spec-interceptor]
  (fn [cofx [_ args]]
    (if (> args 1)
-     {:dispatch [:change-all-next-note-times (a/current-time app.sound/context)]
-      :play-once nil})))
+     {:dispatch [:change-last-beat-time (a/current-time app.sound/context)]})))
 
 (reg-event-fx
  :change-tempo

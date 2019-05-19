@@ -22,11 +22,16 @@
    (:is-playing? db)))
 
 (reg-sub
- :numerator-next-note-time
+ :last-beat-time
  (fn [db _]
-   (get-in db [:numerator :next-note-time])))
+   (:last-beat-time db)))
 
 (reg-sub
- :denominator-next-note-time
+ :numerator-microbeat
  (fn [db _]
-   (get-in db [:denominator :next-note-time])))
+   (get-in db [:numerator :microbeat])))
+
+(reg-sub
+ :denominator-microbeat
+ (fn [db _]
+   (get-in db [:denominator :microbeat])))
