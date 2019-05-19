@@ -1,0 +1,29 @@
+;; shadow-cljs configuration
+{:source-paths
+ ["src"]
+
+ :dependencies
+ [[binaryage/devtools "0.9.10"]
+  [cider/cider-nrepl "0.21.0"]
+  [reagent "0.8.1"]
+  [re-frame "0.10.6"]
+  [stylefy "1.13.0"]
+  [cljs-bach "0.3.0"]
+  [funcool/promesa "2.0.1"]]
+
+ :builds
+ {:app
+  {:target :browser
+   :output-dir "public/js"
+   :asset-path "/js"
+   :modules {:main {:entries [app.core]}}
+   :devtools {:autoload true
+              :before-load app.core/stop
+              :after-load app.core/main
+              :http-root "public"
+              :http-port 8080}}
+  :worker
+  {:target :browser
+   :output-dir "public/js"
+   :modules {:worker {:entries [app.worker]
+                      :web-worker true}}}}}
