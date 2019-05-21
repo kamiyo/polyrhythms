@@ -2,6 +2,7 @@
   (:require [re-frame.core :refer [reg-event-db reg-event-fx reg-fx after debug]]
             [app.db :refer [default-db]]
             [cljs-bach.synthesis :as a]
+            [app.common :refer [get-context-current-time get-seconds-per-beat]]
             [cljs.spec.alpha :as s]))
 
 (defn check-and-throw
@@ -24,13 +25,12 @@
  (fn [cofx [_ new-values]]
    (let [{:keys [divisions which]} new-values]
      {:db (assoc-in (:db cofx) [which :divisions] (max 1 (js/parseInt divisions)))
-      :dispatch [:change-last-beat-time (a/current-time app.sound/context)]})))
+      :dispatch [:change-last-beat-time (get-context-current-time)]})))
 
 (reg-event-db
  :inc-microbeat
- [(when ^boolean goog.DEBUG debug) check-spec-interceptor]
+ [check-spec-interceptor]
  (fn [db [_ which]]
-   (js/console.log which)
    (update-in db [which :microbeat] inc)))
 
 (reg-event-db
@@ -43,7 +43,7 @@
 
 (reg-event-db
  :normalize-microbeats
- [(when ^boolean goog.DEBUG debug) check-spec-interceptor]
+ [check-spec-interceptor]
  (fn [db [_ _]]
    (let [{num-microbeat :microbeat
           num-divisions :divisions} (:numerator db)
@@ -52,7 +52,7 @@
      (-> db
          (assoc-in [:numerator :microbeat] (mod num-microbeat num-divisions))
          (assoc-in [:denominator :microbeat] (mod den-microbeat den-divisions))
-         (update-in [:last-beat-time] + (app.sound/get-seconds-per-beat (:tempo db)))))))
+         (update-in [:last-beat-time] + (get-seconds-per-beat (:tempo db)))))))
 
 (reg-event-db
  :change-last-beat-time
@@ -65,7 +65,7 @@
  [check-spec-interceptor]
  (fn [cofx [_ args]]
    (if (> args 1)
-     {:dispatch [:change-last-beat-time (a/current-time app.sound/context)]})))
+     {:dispatch [:change-last-beat-time (get-context-current-time)]})))
 
 (reg-event-fx
  :change-tempo

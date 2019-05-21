@@ -4,6 +4,8 @@
             [stylefy.core :as stylefy :refer [use-style]]
             [clojure.string :refer [join]]
             [promesa.core :as p]
+            [app.common :refer [context grid-x]]
+            [app.sound :refer [play]]
             [app.buttons]))
 
 (defn gcd
@@ -35,7 +37,8 @@
              ^{:key (str y x)}
              [:div
               (use-style
-               (get-children-style x y span ticks))]))))
+               (get-children-style x y span ticks)
+               {:id (str (dec y) x)})]))))
 
 (defn- get-minor-tick-style
   [idx]
@@ -47,7 +50,8 @@
    :line-height "1.5rem"
    :text-shadow (clojure.string/join ", " (take 20 (repeat "0 0 3px #ffffff")))
    :font-size "0.8rem"
-   :font-weight "normal"})
+   :font-weight "normal"
+   :text-align "center"})
 
 (defn- generate-minor-ticks
   [ticks numerator denominator]
@@ -66,20 +70,54 @@
    :justify-self "start"
    :padding "1rem 0"
    :font-size "1.2rem"
+   :line-height "1.2rem"
    :transform "translateX(-50%)"})
 
 (defn- generate-numbers
-  [ticks total which]
+  [args]
   (let
-   [y (condp = which
+   [{:keys [ticks total which class]} args
+    y (condp = which
         :numerator 0
         :denominator 3)
     span (/ total ticks)]
     (doall (for [x (range 0 ticks)]
              ^{:key (str "number" y x)}
              [:div
-              (use-style (get-number-style x y span))
+              (use-style (get-number-style x y span) {:class class})
               (+ x 1)]))))
+
+(defn- get-visual-beep-container-style
+  [vert-pos horiz-pos divisions]
+  {:grid-row (condp = vert-pos
+               :top 1
+               :bottom 4)
+   :grid-column (condp = horiz-pos
+                  :left 1
+                  :right (+ 2 divisions))
+   :display "flex"
+   :justify-content "center"
+   :align-items "center"})
+
+(def visual-beep-style
+  {:width "0.5rem"
+   :height "0.5rem"
+   :border-radius "0.5rem"
+   :background-color "#dddddd"})
+
+(defn- generate-visual-beep
+  [divisions]
+  (doall
+   (for [vert [:top :bottom]
+         horiz [:left :right]]
+     ^{:key (str "beep" vert horiz)}
+     [:div
+      (use-style
+       (get-visual-beep-container-style vert horiz divisions))
+      [:div
+       (use-style
+        visual-beep-style
+        {:class (str "beep " (name vert))})]])))
 
 (def selector-style
   {:flex "0 1 auto"})
@@ -104,31 +142,43 @@
 
 (def control-group-style
   {:display "flex"
-   :justify-content "space-evenly"})
+   :justify-content "space-evenly"
+   :margin-bottom "2rem"})
 
 (defn control-group
   [numerator denominator total-divisions]
   [:div (use-style control-group-style)
    (selector :numerator numerator)
-   "gcm: " total-divisions
+   "lcm: " total-divisions
    (selector :denominator denominator)])
+
+(def tempo-group-style
+  {:display "flex"
+   :justify-content "center"})
+
+(def tempo-input-style
+  {:margin "0 1rem"})
 
 (defn tempo-control
   []
-
   (fn []
-    [:input
-     {:key "tempo"
-      :type "number"
-      :name "tempo"
-      :value (str @(subscribe [:tempo]))
-      :onWheel #(let [del (.. % -deltaY)
-                      tempo @(subscribe [:tempo])]
-                  (cond
-                    (pos? del) (dispatch [:change-tempo (- 1 tempo)])
-                    (neg? del) (dispatch [:change-tempo (+ 1 tempo)])))
-      :onChange #(dispatch [:change-tempo (.. % -target -value)])
-      :onBlur #(dispatch [:change-tempo (.. % -target -value)])}]))
+    [:div
+     (use-style tempo-group-style)
+     "tempo: "
+     [:input
+      (use-style
+       tempo-input-style
+       {:key "tempo"
+        :type "number"
+        :name "tempo"
+        :value (str @(subscribe [:tempo]))
+        :onWheel #(let [del (.. % -deltaY)
+                        tempo @(subscribe [:tempo])]
+                    (cond
+                      (pos? del) (dispatch [:change-tempo (- 1 tempo)])
+                      (neg? del) (dispatch [:change-tempo (+ 1 tempo)])))
+        :onChange #(dispatch [:change-tempo (.. % -target -value)])
+        :onBlur #(dispatch [:change-tempo (.. % -target -value)])})]]))
 
 (def container-style
   {:padding "5em"
@@ -141,13 +191,50 @@
   [least-common-multiple]
   {:display "grid"
    :grid-template-columns (str "repeat(" (+ least-common-multiple 2) ", 1fr)")
-   :grid-template-rows (str "3rem 1.5rem 1.5rem 3rem")})
+   :grid-template-rows (str "3.2rem 1.5rem 1.5rem 3.2rem")})
 
 (defn handle-click
   [event]
-  (if (= (.-state app.sound/context) "suspended")
-    (-> (.resume app.sound/context) (p/then #(app.sound/play)))
-    (app.sound/play)))
+  (if (= (.-state context) "suspended")
+    (-> (.resume context) (p/then (play)))
+    (play)))
+
+(def cursor-style
+  {:background-color "#00BBBB"
+   :border "none"
+   :box-shadow "none"
+   :opacity "0.5"
+   :position "absolute"
+   :margin "0"})
+
+(defn cursor
+  [num-divisions]
+  (let [!ref (atom nil)
+        cursor-width 4]
+    (r/create-class
+     {:component-did-mount
+      (fn []
+        (when (some? @!ref)
+          (let [ref @!ref
+                el-00-rec (.getBoundingClientRect (js/document.getElementById "00"))
+                start-x (.-left el-00-rec)
+                width-x (* (.-width el-00-rec) num-divisions)
+                grid-el-rec (.getBoundingClientRect (js/document.getElementById "grid"))
+                height (.-height grid-el-rec)
+                start-y (.-top grid-el-rec)]
+            (swap! grid-x assoc :start start-x :width width-x)
+            (set! (-> ref .-style .-left) (str (-> start-x (- (/ cursor-width 2))) "px"))
+            (set! (-> ref .-style .-top) (str start-y "px"))
+            (-> ref (.setAttribute "size" height)))))
+      :display-name "cursor"
+      :reagent-render
+      (fn []
+        [:hr (use-style cursor-style
+                        {:id "cursor"
+                         :width cursor-width
+                         :size "800"
+                         :ref (fn [el]
+                                (reset! !ref el))})])})))
 
 (defn container
   []
@@ -156,13 +243,21 @@
         total-divisions (lcm numerator denominator)
         is-playing? @(subscribe [:is-playing?])]
     [:div (use-style container-style)
+     [(cursor numerator)]
      (control-group numerator denominator total-divisions)
-     [:div (use-style (get-grid-style total-divisions))
-      (generate-numbers numerator total-divisions :numerator)
+     [:div (use-style (get-grid-style total-divisions) {:id "grid"})
+      (generate-numbers {:ticks numerator
+                         :total total-divisions
+                         :which :numerator
+                         :class "number numerator"})
       (generate-ticks numerator total-divisions :numerator)
       (generate-ticks denominator total-divisions :denominator)
-      (generate-numbers denominator total-divisions :denominator)
-      (generate-minor-ticks total-divisions numerator denominator)]
+      (generate-numbers {:ticks denominator
+                         :total total-divisions
+                         :which :denominator
+                         :class "number denominator"})
+      (generate-minor-ticks total-divisions numerator denominator)
+      (generate-visual-beep total-divisions)]
      [:div
       {:style {:text-align "center"}}
       (if is-playing?

@@ -2,9 +2,9 @@
   (:require [cljs-bach.synthesis :as a]
             [reagent.core :as r]
             [re-frame.core :refer [dispatch dispatch-sync subscribe]]
-            [app.common :refer [worker]]))
+            [app.common :refer [worker get-seconds-per-beat context]]
+            [app.animation :refer [raf-id animate]]))
 
-(defonce context (a/audio-context))
 (defonce queue (atom '()))
 (defonce start-time (atom 0))
 (defonce first-run? (atom true))
@@ -12,20 +12,30 @@
 (defonce schedule-ahead-time 0.1) ; s
 (defonce lookahead 25.0) ; ms
 
-(defn get-seconds-per-beat
-  ([tempo] (/ 60.0 tempo))
-  ([tempo divisions] (/ 60.0 tempo divisions)))
+(defonce audio-filter (a/connect->
+                       (a/percussive 0.01 0.05)
+                       (a/gain 0.2)))
+
+(defn analyser-numerator 
+  []
+  (a/subgraph app.common/analyser-numerator))
+
+(defn analyser-denominator
+  []
+  (a/subgraph app.common/analyser-denominator))
 
 (defn blip [freq]
   (a/connect->
-   (a/square freq)
-   (a/percussive 0.01 0.05)
-   (a/gain 0.2)))
+   (a/sine freq)
+   audio-filter))
 
-(defn play-once [time freq]
-  (-> (blip freq)
-      (a/connect-> a/destination)
-      (a/run-with context time 0.1)))
+(defn play-once [time freq which]
+  (let [analyser (condp = which
+                   :numerator analyser-numerator
+                   :denominator analyser-denominator)]
+    (-> (blip freq)
+        (a/connect-> analyser a/destination)
+        (a/run-with context time 0.1))))
 
 (defn next-note [which]
   (let [tempo @(subscribe [:tempo])
@@ -36,8 +46,8 @@
                     {:next-note-time (+ next-note-time seconds-per-beat)
                      :which which}])))
 
-(defn schedule-note [time freq]
-  (play-once time freq))
+(defn schedule-note [time freq which]
+  (play-once time freq which))
 
 (defonce current-micro-beat (r/atom 0))
 
@@ -62,7 +72,8 @@
         (listen [:numerator-microbeat])
         (* seconds-per-numerator)
         (+ last-beat-time))
-       2640)
+       3520
+       :numerator)
       (dispatch-sync [:inc-microbeat :numerator]))
     (while (< (-> (listen [:denominator-microbeat])
                   (* seconds-per-denominator)
@@ -73,7 +84,8 @@
         (listen [:denominator-microbeat])
         (* seconds-per-denominator)
         (+ last-beat-time))
-       1320)
+       2640
+       :denominator)
       (dispatch-sync [:inc-microbeat :denominator]))
     (if (and
          (> (listen [:numerator-microbeat]) numerator)
@@ -96,6 +108,7 @@
     (if (not is-playing?)
       (do
         (dispatch [:toggle-playing])
+        (reset! raf-id (js/window.requestAnimationFrame animate))
         (when @first-run?
           (-> (blip 1320)
               (a/connect->
@@ -108,4 +121,5 @@
         (dispatch-sync [:reset-microbeats]))
       (do
         (dispatch [:toggle-playing])
+        (app.animation/stop-animation)
         (.postMessage @worker "stop")))))

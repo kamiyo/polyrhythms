@@ -3,13 +3,15 @@
             [reagent.core :as r]
             [app.common :refer [worker]]
             [app.events]
-            [app.views]            
+            [app.views]
             [app.subs]
-            [app.sound]            
+            [app.sound]
+            [app.animation]
             [stylefy.core :as stylefy]))
 
 (defn start
   []
+  (app.common/init-audio)
   (.addEventListener
    @worker
    "message"
