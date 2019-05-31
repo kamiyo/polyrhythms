@@ -12,6 +12,7 @@
    ::stylefy/mode
    {:hover
     {:cursor "pointer"
+     :transform "scale(1.05)"
      :fill "#888888"}}})
 
 (defn play-button

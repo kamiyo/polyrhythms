@@ -1,6 +1,9 @@
 (ns app.db
   (:require [cljs.spec.alpha :as s]
-            [re-frame.core :as re-frame]))
+            [re-frame.core :as re-frame]
+            [app.routes :refer [routes]]))
+
+
 
 (s/def ::tempo number?)
 (s/def ::is-playing? boolean?)
@@ -14,17 +17,20 @@
 
 (s/def ::numerator ::subdivision)
 (s/def ::denominator ::subdivision)
+(s/def ::route routes)
 
 (s/def ::db
   (s/keys :req-un
-          [::numerator
+          [::route
+           ::numerator
            ::denominator
            ::tempo
            ::last-beat-time
            ::is-playing?]))
 
 (def default-db
-  {:numerator {:divisions 3
+  {:route :polyrhythms
+   :numerator {:divisions 3
                :microbeat 0}
    :denominator {:divisions 2
                  :microbeat 0}

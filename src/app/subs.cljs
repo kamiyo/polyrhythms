@@ -35,3 +35,8 @@
  :denominator-microbeat
  (fn [db _]
    (get-in db [:denominator :microbeat])))
+
+(reg-sub
+ :route
+ (fn [db _]
+   (:route db)))

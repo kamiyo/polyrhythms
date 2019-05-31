@@ -14,6 +14,10 @@
 ;; now we create an interceptor using `after`
 (def check-spec-interceptor (after (partial check-and-throw :app.db/db)))
 
+(def debug? ^boolean goog.DEBUG)
+(def standard-interceptors [(when debug? debug)
+                            (when debug? check-spec-interceptor)])
+
 (reg-event-db
  :initialise-db
  (fn [_ _]
@@ -21,7 +25,7 @@
 
 (reg-event-fx
  :change-divisions
- [check-spec-interceptor]
+ [standard-interceptors]
  (fn [cofx [_ new-values]]
    (let [{:keys [divisions which]} new-values]
      {:db (assoc-in (:db cofx) [which :divisions] (max 1 (js/parseInt divisions)))
@@ -29,13 +33,13 @@
 
 (reg-event-db
  :inc-microbeat
- [check-spec-interceptor]
+ [standard-interceptors]
  (fn [db [_ which]]
    (update-in db [which :microbeat] inc)))
 
 (reg-event-db
  :reset-microbeats
- [check-spec-interceptor]
+ [standard-interceptors]
  (fn [db [_ _]]
    (-> db
        (assoc-in [:numerator :microbeat] 0)
@@ -43,7 +47,7 @@
 
 (reg-event-db
  :normalize-microbeats
- [check-spec-interceptor]
+ [standard-interceptors]
  (fn [db [_ _]]
    (let [{num-microbeat :microbeat
           num-divisions :divisions} (:numerator db)
@@ -82,3 +86,9 @@
  [check-spec-interceptor]
  (fn [db [_]]
    (assoc db :is-playing? (not (:is-playing? db)))))
+
+(reg-event-db
+ :change-route
+ [check-spec-interceptor]
+ (fn [db [_ route]]
+   (assoc db :route route)))

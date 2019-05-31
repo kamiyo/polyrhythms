@@ -1,9 +1,43 @@
 (ns app.animation
   (:require [reagent.core :as r]
-            [app.common :refer [get-seconds-per-beat get-context-current-time grid-x]]
+            [app.common :refer [get-seconds-per-beat
+                                get-context-current-time
+                                grid-x
+                                populate-analyser
+                                buffer-numerator
+                                buffer-denominator]]
             [re-frame.core :refer [subscribe]]))
 
 (defonce raf-id (r/atom nil))
+
+(defn set-el-highlight
+  [el color]
+  (set! (-> el .-style .-fontWeight) "bold")
+  (set! (-> el .-style .-fontSize) "1.5rem")
+  (set! (-> el .-style .-textShadow) color)
+  (set! (-> el .-style .-color) "#ffffff"))
+
+(defn unset-el-highlight
+  [el]
+  (set! (-> el .-style .-fontWeight) "normal")
+  (set! (-> el .-style .-fontSize) "1.2rem")
+  (set! (-> el .-style .-textShadow) "none")
+  (set! (-> el .-style .-color) "#000000"))
+
+(defn do-beep
+  [which]
+  (let [[buffer color] (condp = which
+                 :top [buffer-numerator "#ff3333"]
+                 :bottom [buffer-denominator "#3333ff"])
+        normalized-buffer (reduce (fn
+                                    [acc val]
+                                    (+ acc (-> val (- 128) Math/abs)))
+                                  0
+                                  (array-seq buffer))]
+    (doseq [el (array-seq (js/document.getElementsByClassName (str "beep " (name which))))]
+      (if (> normalized-buffer 0)
+        (set! (-> el .-style .-backgroundColor) color)
+        (set! (-> el .-style .-backgroundColor) "#dddddd")))))
 
 (defn animate
   []
@@ -13,7 +47,7 @@
         seconds-per-beat (get-seconds-per-beat @(subscribe [:tempo]))
         time-since-last-beat (- (get-context-current-time) last-beat-time)
         progress (/ time-since-last-beat seconds-per-beat)
-        progress-adjusted (if (neg? progress) (+ 1 progress) progress)
+        progress-adjusted (if (neg? progress) (inc progress) progress)
         new-x (+ start (* progress-adjusted width))
         cursor (js/document.getElementById "cursor")
         cursor-left (-> cursor (.getBoundingClientRect) .-left)
@@ -33,26 +67,12 @@
        (or (and (> midpoint-difference -20)
                 (< midpoint-difference 50))
            (> midpoint-difference max-thresh))
-        (do (set! (-> el .-style .-fontWeight) "bold")
-            (set! (-> el .-style .-fontSize) "1.5rem")
-            (set! (-> el .-style .-textShadow) color)
-            (set! (-> el .-style .-color) "#ffffff"))
-        (do (set! (-> el .-style .-fontWeight) "normal")
-            (set! (-> el .-style .-fontSize) "1.2rem")
-            (set! (-> el .-style .-textShadow) "none")
-            (set! (-> el .-style .-color) "#000000"))))
-    (.getByteTimeDomainData app.common/analyser-numerator app.common/buffer-numerator)
-    (.getByteTimeDomainData app.common/analyser-denominator app.common/buffer-denominator)
-    (let [normalized-buffer (reduce #(+ %1 (-> %2 (- 128) Math/abs)) 0 (array-seq app.common/buffer-numerator))]
-      (doseq [el (array-seq (js/document.getElementsByClassName "beep top"))]
-        (if (> normalized-buffer 0)
-          (set! (-> el .-style .-backgroundColor) "#ff3333")
-          (set! (-> el .-style .-backgroundColor) "#dddddd"))))
-    (let [normalized-buffer (reduce #(+ %1 (-> %2 (- 128) Math/abs)) 0 (array-seq app.common/buffer-denominator))]
-      (doseq [el (array-seq (js/document.getElementsByClassName "beep bottom"))]
-        (if (> normalized-buffer 0)
-          (set! (-> el .-style .-backgroundColor) "#3333ff")
-          (set! (-> el .-style .-backgroundColor) "#dddddd"))))))
+        (set-el-highlight el color)
+        (unset-el-highlight el)))
+    (populate-analyser :numerator)
+    (populate-analyser :denominator)
+    (do-beep :top)
+    (do-beep :bottom)))
 
 (defn stop-animation
   []

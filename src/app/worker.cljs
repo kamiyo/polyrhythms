@@ -5,7 +5,7 @@
 
 (js/self.addEventListener
  "message"
- (fn [e]
+ (fn [^js e]
    (let [data (.-data e)]
      (cond
        (= data "start")

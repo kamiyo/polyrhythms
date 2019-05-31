@@ -1,0 +1,19 @@
+<svg viewBox="-60 -120 120 180" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="none" stroke="rgb(10, 66, 96)" stroke-width="2" stroke-linejoin="round">
+    <path d="M20-45c0-2 0-5-5-5h-30c-5 0-5 3-5 5s0 5 5 5v20l-30 50c-9 15 5 20 15 20h60c10 0 24-5 15-20L15-20v-20c5 0 5-3 5-5"/>
+    <path d="M23 0H-23L-43 34C-49 44 -37 46.5 -33 46.5H33C37 46.5 49 44 43 34z" fill="rgb(10, 66, 96)" stroke="white" />
+    <symbol id="note" viewBox="-10 -10 20 20">
+    <path d="M1.703-3.328c-.26-.34-.194-.216-.605-1.13H1.02V-.48C.915-.59.756-.64.556-.64c-.538 0-1.17.446-1.17.898 0 .282.247.44.575.44.538 0 1.18-.43 1.18-.892V-3.17c.153.02.184.042.425.206.416.292.626.62.626.98 0 .313-.05.585-.147.815a.282.282 0 0 0-.03.1c0 .026.015.04.04.04.118 0 .313-.615.313-1.015 0-.24-.072-.472-.21-.697-.02-.03-.17-.226-.452-.585z" />
+    </symbol>
+    <g
+         fill="rgb(10, 66, 96)"
+         stroke="none"
+         transform="translate(-15 -102) rotate(-15) scale(1.2)">
+        <use xlink:href="#note" x="-60" y="-60"/>
+        </g>
+        <g
+        fill="rgb(10, 66, 96)"
+         stroke="none"
+        transform="translate(15 -120) rotate(3) scale(0.8)">
+        <use xlink:href="#note" x="-60" y="-60"/>
+        </g>
+</svg>

@@ -9,7 +9,8 @@
   [re-frame "0.10.6"]
   [stylefy "1.13.0"]
   [cljs-bach "0.3.0"]
-  [funcool/promesa "2.0.1"]]
+  [secretary "1.2.3"]
+  [venantius/accountant "0.2.4"]]
 
  :builds
  {:app
@@ -17,6 +18,7 @@
    :output-dir "public/js"
    :asset-path "/js"
    :modules {:main {:entries [app.core]}}
+   :release {:compiler-options {:infer-externs :auto}}
    :devtools {:autoload true
               :before-load app.core/stop
               :after-load app.core/main
@@ -26,4 +28,5 @@
   {:target :browser
    :output-dir "public/js"
    :modules {:worker {:entries [app.worker]
-                      :web-worker true}}}}}
+                      :web-worker true}}
+   :release {:compiler-options {:infer-externs :auto}}}}}
