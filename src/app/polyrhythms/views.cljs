@@ -131,22 +131,51 @@
   {:flex "0 1 auto"})
 
 (def input-style
-  {:margin "0 1rem"})
+  {:margin "0 1rem"
+   :width "6rem"
+   :scrollbar-width "thin"})
+
+(defn desktop-number-input
+  [type value]
+  [:input
+   (use-style
+    input-style
+    {:type "number"
+     :name (name type)
+     :value value
+     :min 1
+     :onChange #(dispatch [:change-divisions
+                           {:divisions (-> % .-target .-value)
+                            :which type}])})])
+
+(def option-style
+  {:padding "0 1rem"})
+
+(defn mobile-number-select
+  [type value]
+  [:select
+   (use-style
+    input-style
+    {:value value
+     :onChange #(dispatch [:change-divisions
+                           {:divisions (-> % .-target .-value)
+                            :which type}])})
+   (doall
+    (for [n (range 1 100)]
+      ^{:key (str "select " n)}
+      [:option (use-style
+                option-style
+                {:value n})
+       n]))])
 
 (defn selector
   [type value]
   [:div (use-style selector-style)
    (str (name type) ": ")
-   [:input
-    (use-style
-     input-style
-     {:type "number"
-      :name (name type)
-      :value value
-      :min 1
-      :onChange #(dispatch [:change-divisions
-                            {:divisions (-> % .-target .-value)
-                             :which type}])})]])
+   (js/console.log @(subscribe [:is-mobile?]))
+   (if @(subscribe [:is-mobile?])
+     (mobile-number-select type value)
+     (desktop-number-input type value))])
 
 (def control-group-style
   {:display "flex"

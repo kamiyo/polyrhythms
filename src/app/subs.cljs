@@ -40,3 +40,8 @@
  :route
  (fn [db _]
    (:route db)))
+
+(reg-sub
+ :is-mobile?
+ (fn [db _]
+   (:is-mobile? db)))

@@ -4,7 +4,7 @@
             [app.routes :refer [routes]]))
 
 
-
+(s/def ::is-mobile? boolean?)
 (s/def ::tempo number?)
 (s/def ::is-playing? boolean?)
 (s/def ::last-beat-time number?)
@@ -21,7 +21,8 @@
 
 (s/def ::db
   (s/keys :req-un
-          [::route
+          [::is-mobile?
+           ::route
            ::numerator
            ::denominator
            ::tempo
@@ -29,7 +30,8 @@
            ::is-playing?]))
 
 (def default-db
-  {:route :polyrhythms
+  {:is-mobile? false
+   :route :polyrhythms
    :numerator {:divisions 3
                :microbeat 0}
    :denominator {:divisions 2

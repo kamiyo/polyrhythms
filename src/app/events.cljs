@@ -92,3 +92,9 @@
  [check-spec-interceptor]
  (fn [db [_ route]]
    (assoc db :route route)))
+
+(reg-event-db
+ :update-is-mobile?
+ [check-spec-interceptor]
+ (fn [db [_ is-mobile?]]
+   (assoc db :is-mobile? is-mobile?)))
