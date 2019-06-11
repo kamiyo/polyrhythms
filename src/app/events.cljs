@@ -92,3 +92,9 @@
  [check-spec-interceptor]
  (fn [db [_ route]]
    (assoc db :route route)))
+
+(reg-event-db
+ :change-display
+ [check-spec-interceptor]
+ (fn [db [_ type]]
+   (assoc db :display-type type)))

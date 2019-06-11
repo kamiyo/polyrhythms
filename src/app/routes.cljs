@@ -6,7 +6,7 @@
             [goog.events :as events]
             [goog.history.EventType :as EventType]))
 
-(def routes #{:polyrhythms})
+(def routes [:main :polyrhythms :github])
 
 (defn init-router! []
   (accountant/configure-navigation!

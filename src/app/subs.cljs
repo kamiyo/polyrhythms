@@ -40,3 +40,8 @@
  :route
  (fn [db _]
    (:route db)))
+
+(reg-sub
+ :display-type
+ (fn [db _]
+   (:display-type db)))
