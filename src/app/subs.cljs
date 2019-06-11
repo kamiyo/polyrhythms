@@ -45,3 +45,8 @@
  :is-mobile?
  (fn [db _]
    (:is-mobile? db)))
+
+(reg-sub
+ :display-type
+ (fn [db _]
+   (:display-type db)))

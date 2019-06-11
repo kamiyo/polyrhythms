@@ -98,3 +98,9 @@
  [check-spec-interceptor]
  (fn [db [_ is-mobile?]]
    (assoc db :is-mobile? is-mobile?)))
+
+(reg-event-db
+ :change-display
+ [check-spec-interceptor]
+ (fn [db [_ type]]
+   (assoc db :display-type type)))

@@ -9,8 +9,7 @@
   {:list-style-type "none"
    :user-select "none"
    :text-transform "uppercase"
-   :margin "0"
-   :margin-right "2rem"
+   :margin "0 1rem 0 0"
    :display "flex"
    :height (str navbar-height "px")})
 
@@ -19,7 +18,7 @@
    :align-items "flex-end"
    :font-size "1.4rem"
    :text-align "center"
-   :margin-top "1.5rem"
+   :padding-top "1.5rem"
    ::stylefy/mode
    {:hover {:cursor "pointer"}}})
 
@@ -31,12 +30,20 @@
                      :visited {:color color}}}))
 
 (def menu-link-text-style
-  {:padding-top "0.5rem"
-   :padding-bottom "0.6rem"})
+  {:padding "0.5rem 1rem 0.6rem 1rem"})
 
 (defn get-highlight-style [active?]
   {:background-color (if active? "rgb(78, 134, 164)" "none")
    :height "5px"})
+
+(def github-style
+  {:height "40px"
+   :margin-bottom "-10px"})
+
+(defn github-link []
+  [:img (use-style
+         github-style
+         {:src "/images/github-small.svg"})])
 
 (defn menu []
   [:ul
@@ -45,17 +52,22 @@
                 :let [active? (= @(subscribe [:route]) route)]]
             ^{:key route} [:li
                            (use-style menu-li-style)
-                           [:a
-                            (use-style
-                             (menu-link-style active?)
-                             {:href (str "/" (name route))})
-                            [:div
-                             (use-style
-                              menu-link-text-style)
-                             route]
-                            [:div
-                             (use-style
-                              (get-highlight-style active?))]]]))])
+                           (let
+                            [[name url] (condp = route
+                                          :main ["main site" "https://www.seanchenpiano.com"]
+                                          :github [(github-link) "https://github.com/kamiyo/polyrhythms"]
+                                          [(name route) (str "/" (name route))])]
+                             [:a
+                              (use-style
+                               (menu-link-style active?)
+                               {:href url})
+                              [:div
+                               (use-style
+                                menu-link-text-style)
+                               name]
+                              [:div
+                               (use-style
+                                (get-highlight-style active?))]])]))])
 
 (defn logo-svg []
   [:svg {:style {:display "none"}}

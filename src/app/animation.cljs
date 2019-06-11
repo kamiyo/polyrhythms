@@ -12,48 +12,48 @@
 
 (defn set-el-highlight
   [el color]
-  (set! (-> el .-style .-fontWeight) "bold")
-  (set! (-> el .-style .-fontSize) "1.5rem")
-  (set! (-> el .-style .-textShadow) color)
-  (set! (-> el .-style .-color) "#ffffff"))
+  (set! (.. el -style -fontWeight) "bold")
+  (set! (.. el -style -fontSize) "1.5rem")
+  (set! (.. el -style -textShadow) color)
+  (set! (.. el -style -color) "#ffffff"))
 
 (defn unset-el-highlight
   [el]
-  (set! (-> el .-style .-fontWeight) "normal")
-  (set! (-> el .-style .-fontSize) "1.2rem")
-  (set! (-> el .-style .-textShadow) "none")
-  (set! (-> el .-style .-color) "#000000"))
+  (set! (.. el -style -fontWeight) "normal")
+  (set! (.. el -style -fontSize) "1.2rem")
+  (set! (.. el -style -textShadow) "none")
+  (set! (.. el -style -color) "#000000"))
 
 (defn do-beep
   [which]
-  (let [[buffer color] (condp = which
-                 :top [buffer-numerator "#ff3333"]
-                 :bottom [buffer-denominator "#3333ff"])
-        normalized-buffer (reduce (fn
-                                    [acc val]
-                                    (+ acc (-> val (- 128) Math/abs)))
-                                  0
-                                  (array-seq buffer))]
-    (doseq [el (array-seq (js/document.getElementsByClassName (str "beep " (name which))))]
-      (if (> normalized-buffer 0)
-        (set! (-> el .-style .-backgroundColor) color)
-        (set! (-> el .-style .-backgroundColor) "#dddddd")))))
+  (let [[buffer color]    (condp = which
+                            :top    [buffer-numerator "#ff3333"]
+                            :bottom [buffer-denominator "#3333ff"])
+        normalized-buffer (reduce
+                           (fn [acc val]
+                             (+ acc (-> val (- 128) Math/abs)))
+                           0
+                           (array-seq buffer))]
+    (doseq
+     [el (array-seq (js/document.getElementsByClassName (str "beep " (name which))))]
+      (if (pos? normalized-buffer)
+        (set! (.. el -style -backgroundColor) color)
+        (set! (.. el -style -backgroundColor) "#dddddd")))))
 
-(defn animate
-  []
+(defn animate []
   (reset! raf-id (js/window.requestAnimationFrame animate))
   (let [{:keys [start width]} @grid-x
-        last-beat-time @(subscribe [:last-beat-time])
-        seconds-per-beat (get-seconds-per-beat @(subscribe [:tempo]))
-        time-since-last-beat (- (get-context-current-time) last-beat-time)
-        progress (/ time-since-last-beat seconds-per-beat)
-        progress-adjusted (if (neg? progress) (inc progress) progress)
-        new-x (+ start (* progress-adjusted width))
-        cursor (js/document.getElementById "cursor")
-        cursor-left (-> cursor (.getBoundingClientRect) .-left)
-        cursor-width (-> cursor (.getBoundingClientRect) .-width)
-        cursor-midpoint (+ cursor-left (/ cursor-width 2))]
-    (set! (-> cursor .-style .-left) (str new-x "px"))
+        last-beat-time        @(subscribe [:last-beat-time])
+        seconds-per-beat      (get-seconds-per-beat @(subscribe [:tempo]))
+        time-since-last-beat  (- (get-context-current-time) last-beat-time)
+        progress              (/ time-since-last-beat seconds-per-beat)
+        progress-adjusted     (if (neg? progress) (inc progress) progress)
+        cursor                (js/document.getElementById "cursor")
+        cursor-left           (-> cursor (.getBoundingClientRect) .-left)
+        cursor-width          (-> cursor (.getBoundingClientRect) .-width)
+        cursor-midpoint       (+ cursor-left (/ cursor-width 2))
+        new-x                 (+ start (* progress-adjusted width))]
+    (set! (.. cursor -style -left) (str (max start new-x) "px"))
     (doseq [el (array-seq (js/document.getElementsByClassName "number"))
             :let [el-left (-> el (.getBoundingClientRect) .-left)
                   el-width (-> el (.getBoundingClientRect) .-width)

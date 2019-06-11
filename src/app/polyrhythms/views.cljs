@@ -46,9 +46,9 @@
                {:id (str (dec y) x)})]))))
 
 (defn- get-minor-tick-style
-  [idx]
+  [idx is-cyclical?]
   {:grid-column (+ idx 2)
-   :grid-row "2"
+   :grid-row (if is-cyclical? "3" "2")
    :color "#b0b0b0"
    :justify-self "start"
    :transform "translate(-50%, -50%)"
@@ -58,15 +58,26 @@
    :font-weight "normal"
    :text-align "center"})
 
+(defn- generate-number-column
+  [x numerator denominator]
+  [:<>
+   [:div (-> x (mod denominator) inc)]
+   [:div (inc x)]
+   [:div (-> x (mod numerator) inc)]])
+
 (defn- generate-minor-ticks
   [ticks numerator denominator]
-  (doall (for [x (range 0 ticks)]
-           ^{:key (str "minor" x)}
-           [:div
-            (use-style (get-minor-tick-style x))
-            [:div (-> x (mod denominator) (+ 1))]
-            [:div (+ x 1)]
-            [:div (-> x (mod numerator) (+ 1))]])))
+  (let [display-type @(subscribe [:display-type])
+        display-fn (condp = display-type
+                     :sequential generate-number-column
+                     :cyclical (fn
+                                 [x numerator _]
+                                 [:div (-> x (mod numerator) inc)]))]
+    (doall (for [x (range 0 ticks)]
+             ^{:key (str "minor" x)}
+             [:div
+              (use-style (get-minor-tick-style x (= display-type :cyclical)))
+              (display-fn x numerator denominator)]))))
 
 (defn- get-number-style
   [idx idy span]
@@ -79,6 +90,10 @@
      :line-height "1.2rem"
      :transform "translateX(-50%)"}))
 
+(defn- increment-cyclical
+  [modulus amount x]
+  (inc (mod (* amount x) modulus)))
+
 (defn- generate-numbers
   [args]
   (let
@@ -86,12 +101,19 @@
     y (condp = which
         :numerator 0
         :denominator 3)
-    span (/ total ticks)]
-    (doall (for [x (range 0 ticks)]
-             ^{:key (str "number" y x)}
-             [:div
-              (use-style (get-number-style x y span) {:class class})
-              (inc x)]))))
+    span (/ total ticks)
+    inc-fn (if
+            (and
+             (= :cyclical @(subscribe [:display-type]))
+             (= :numerator which))
+             (partial increment-cyclical ticks span)
+             inc)]
+    (doall
+     (for [x (range 0 ticks)]
+       ^{:key (str "number" y x)}
+       [:div
+        (use-style (get-number-style x y span) {:class class})
+        (inc-fn x)]))))
 
 (defn- get-visual-beep-container-style
   [vert-pos horiz-pos divisions]
@@ -219,7 +241,7 @@
 
 (def container-style
   {:margin-top (str (+ 32 app.styles/navbar-height) "px")
-   :padding "5em"
+   :padding "0 5em 5em 5em"
    :background-color "#fafafa"
    :box-shadow "2px 2px 5px rgba(0,0,0,0.6)"
    :border-radius "5px"
@@ -253,25 +275,63 @@
      {:component-did-mount
       (fn []
         (when (some? @!ref)
-          (let [ref @!ref
-                el-00-rec (.getBoundingClientRect (js/document.getElementById "00"))
-                start-x (.-left el-00-rec)
-                width-x (* (.-width el-00-rec) num-divisions)
+          (let [ref         @!ref
+                el-00-rec   (.getBoundingClientRect (js/document.getElementById "00"))
+                start-x     (.-left el-00-rec)
+                width-x     (* (.-width el-00-rec) num-divisions)
                 grid-el-rec (.getBoundingClientRect (js/document.getElementById "grid"))
-                height (.-height grid-el-rec)
-                start-y (.-top grid-el-rec)]
+                height      (.-height grid-el-rec)
+                start-y     (.-top grid-el-rec)]
             (swap! grid-x assoc :start start-x :width width-x)
-            (set! (-> ref .-style .-left) (str (-> start-x (- (/ cursor-width 2))) "px"))
-            (set! (-> ref .-style .-top) (str start-y "px"))
-            (-> ref (.setAttribute "size" height)))))
+            (set! (.. ref -style -left) (str start-x "px"))
+            (set! (.. ref -style -top) (str start-y "px"))
+            (.setAttribute ref "size" height))))
       :display-name "cursor"
       :reagent-render
       (fn []
-        [:hr (use-style cursor-style
-                        {:id "cursor"
-                         :width cursor-width
-                         :size "800"
-                         :ref #(reset! !ref %)})])})))
+        [:hr (use-style
+              cursor-style
+              {:id    "cursor"
+               :width cursor-width
+               :size  "800"
+               :ref   #(reset! !ref %)})])})))
+
+(def tabs-container-style
+  {:display "flex"})
+
+(defn- get-tab-style
+  [is-active?]
+  (let [color (if is-active? "black" "rgba(0,0,0,0.4)")]
+    {:color color
+     :flex           "1 1 auto"
+     :display        "flex"
+     :flex-direction "column"
+     :text-align     "center"
+     :margin         "0 0.5rem 2rem 0.5rem"
+     :transition     "all 0.1s"
+     ::stylefy/mode
+     {:hover
+      {:cursor "pointer"
+       :text-shadow (str "0px 0px 2px " color)}}}))
+
+(defn- get-tab-highlight
+  [is-active?]
+  {:width "100%"
+   :height "5px"
+   :background-color (if is-active? "rgb(78, 134, 164)" "none")})
+
+(defn tabs
+  []
+  (let [display-type @(subscribe [:display-type])]
+    [:div (use-style tabs-container-style)
+     (doall (for [type app.db/display-types
+                  :let [is-active? (= display-type type)]]
+              [:div (use-style
+                     (get-tab-style is-active?)
+                     {:on-click #(dispatch [:change-display type])})
+               [:div (use-style (get-tab-highlight is-active?))]
+               [:div (use-style {:padding "1.4rem 2rem"})
+                type]]))]))
 
 (defn polyrhythm-container
   []
@@ -280,6 +340,7 @@
         total-divisions (lcm numerator denominator)
         is-playing? @(subscribe [:is-playing?])]
     [:div (use-style container-style)
+     (tabs)
      [(cursor numerator)]
      (control-group numerator denominator total-divisions)
      [:div (use-style (get-grid-style total-divisions) {:id "grid"})
