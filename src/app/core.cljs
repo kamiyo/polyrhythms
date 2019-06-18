@@ -1,48 +1,48 @@
 (ns app.core
   (:require [re-frame.core :refer [dispatch-sync dispatch]]
             [reagent.core :as r]
-            [app.common :refer [worker]]
+            [app.polyrhythms.common :refer [worker init-audio]]
             [app.subs]
-            [app.routes]
+            [app.routes :refer [init-app-routes]]
             [app.styles]
             [app.nav]
             [app.events]
-            [app.views]
-            [app.polyrhythms.sound]
-            [app.animation]
+            [app.views :refer [app]]
+            [app.polyrhythms.sound :refer [lookahead]]
+            [app.polyrhythms.animation]
             [stylefy.core :as stylefy]
             ["mobile-detect" :as mobile-detect]))
 
-(defn listen-worker [^js e]
+(defn listen-worker
+  [^js e]
   (when (= (.-data e) "tick")
     (app.polyrhythms.sound/scheduler)))
 
-(defn listen-browser [^js e]
+(defn listen-browser
+  [^js e]
   (let [mobile? (-> (mobile-detect. js/window.navigator.userAgent) .mobile some?)]
-    (js/console.log "updating" mobile?)
+    (reset! app.polyrhythms.views/window-width (.-innerWidth js/window))
     (dispatch [:update-is-mobile? mobile?])))
 
-(defn start
-  []
-  (app.common/init-audio)
-  (app.routes/init-app-routes)
+(defn start []
+  (init-audio)
+  (init-app-routes)
   (.addEventListener ^js @worker "message" listen-worker)
   (.addEventListener ^js js/window "resize" listen-browser)
-  (.postMessage ^js @worker (clj->js {:interval app.polyrhythms.sound/lookahead}))
-  (r/render [app.views/app]
-            (.getElementById js/document "app")))
+  (.postMessage ^js @worker (clj->js {:interval lookahead}))
+  (r/render [app] (.getElementById js/document "app")))
 
-(stylefy/init {:global-vendor-prefixed {::stylefy/vendors ["webkit" "moz" "o"]
-                                        ::stylefy/auto-prefix #{:border-radius}}})
+(stylefy/init
+ {:global-vendor-prefixed
+  {::stylefy/vendors      ["webkit" "moz" "o"]
+   ::stylefy/auto-prefix #{:border-radius}}})
 
 (dispatch-sync [:initialise-db])
 
-(defn stop
-  []
+(defn stop []
   (.postMessage @worker "stop")
   (.removeEventListener js/window "resize" listen-browser)
   (.removeEventListener @worker "tick" listen-worker))
 
-(defn ^:export main
-  []
+(defn ^:export main []
   (start))

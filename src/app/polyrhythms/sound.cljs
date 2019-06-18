@@ -1,9 +1,17 @@
 (ns app.polyrhythms.sound
   (:require [cljs-bach.synthesis :as a]
             [reagent.core :as r]
-            [re-frame.core :refer [dispatch dispatch-sync subscribe]]
-            [app.common :refer [worker get-seconds-per-beat context]]
-            [app.animation :refer [raf-id animate]]))
+            [re-frame.core
+             :refer [dispatch
+                     dispatch-sync
+                     subscribe]]
+            [app.polyrhythms.common
+             :refer [worker
+                     get-seconds-per-beat
+                     context
+                     analyser-denominator
+                     analyser-numerator]]
+            [app.polyrhythms.animation :refer [raf-id animate stop-animation]]))
 
 (defonce schedule-ahead-time 0.1) ; s
 (defonce lookahead 25.0) ; ms
@@ -13,13 +21,13 @@
                        (a/percussive 0.01 0.05)
                        (a/gain 0.2)))
 
-(defn analyser-numerator
+(defn analyser-numerator-subgraph
   []
-  (a/subgraph app.common/analyser-numerator))
+  (a/subgraph analyser-numerator))
 
-(defn analyser-denominator
+(defn analyser-denominator-subgraph
   []
-  (a/subgraph app.common/analyser-denominator))
+  (a/subgraph analyser-denominator))
 
 (defn blip [freq]
   (a/connect->
@@ -32,8 +40,8 @@
 
 (defn play-once [time which]
   (let [analyser (condp = which
-                   :numerator analyser-numerator
-                   :denominator analyser-denominator)]
+                   :numerator analyser-numerator-subgraph
+                   :denominator analyser-denominator-subgraph)]
     (-> (blip (which beat-frequencies))
         (a/connect-> analyser a/destination)
         (a/run-with context time 0.1))))
@@ -90,5 +98,7 @@
         (dispatch-sync [:reset-microbeats]))
       (do
         (dispatch [:toggle-playing])
-        (app.animation/stop-animation)
+        (dispatch-sync [:change-last-beat-time (a/current-time context)])
+        (dispatch-sync [:reset-microbeats])
+        (stop-animation)
         (.postMessage ^js @worker "stop")))))

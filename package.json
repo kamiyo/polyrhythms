@@ -6,6 +6,7 @@
     "shadow-cljs": "2.8.36"
   },
   "dependencies": {
+    "@material-ui/core": "^4.0.0-rc.0",
     "create-react-class": "^15.6.3",
     "mobile-detect": "^1.4.3",
     "react": "^16.8.6",

@@ -3,7 +3,7 @@
              [re-frame.core :refer [subscribe]]
              [stylefy.core :as stylefy :refer [use-style]]
              [app.routes :refer [routes]]
-             [app.styles :refer [navbar-height]]))
+             [app.styles :refer [navbar-height dark-blue]]))
 
 (def menu-ul-style
   {:list-style-type "none"
@@ -92,18 +92,19 @@
    :left "0"
    :width "100%"
    :background-color "white"
-   :color "rgb(10, 66, 96)"
+   :color dark-blue
    :display "flex"
    :align-items "flex-start"
    :justify-content "space-between"
    :font-family "lato-light, sans-serif"
-   :letter-spacing "0.05rem"})
+   :letter-spacing "0.05rem"
+   :z-index "1000"})
 
 (def navbar-logo-style
   {:width "150px"
    :height "150px"
    :float "left"
-   :fill "rgb(10, 66, 96)"
+   :fill dark-blue
    :-webkit-tap-highlight-color "transparent"})
 
 (def logo-group-style

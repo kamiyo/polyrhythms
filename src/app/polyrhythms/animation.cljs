@@ -1,11 +1,11 @@
-(ns app.animation
+(ns app.polyrhythms.animation
   (:require [reagent.core :as r]
-            [app.common :refer [get-seconds-per-beat
-                                get-context-current-time
-                                grid-x
-                                populate-analyser
-                                buffer-numerator
-                                buffer-denominator]]
+            [app.polyrhythms.common :refer [get-seconds-per-beat
+                                            get-context-current-time
+                                            grid-x
+                                            populate-analyser
+                                            buffer-numerator
+                                            buffer-denominator]]
             [re-frame.core :refer [subscribe]]))
 
 (defonce raf-id (r/atom nil))
@@ -29,11 +29,10 @@
   (let [[buffer color]    (condp = which
                             :top    [buffer-numerator "#ff3333"]
                             :bottom [buffer-denominator "#3333ff"])
-        normalized-buffer (reduce
-                           (fn [acc val]
-                             (+ acc (-> val (- 128) Math/abs)))
-                           0
-                           (array-seq buffer))]
+        normalized-buffer (reduce (fn [acc val]
+                                    (+ acc (Math/abs (- val 128))))
+                                  0
+                                  (array-seq buffer))]
     (doseq
      [el (array-seq (js/document.getElementsByClassName (str "beep " (name which))))]
       (if (pos? normalized-buffer)
@@ -49,24 +48,32 @@
         progress              (/ time-since-last-beat seconds-per-beat)
         progress-adjusted     (if (neg? progress) (inc progress) progress)
         cursor                (js/document.getElementById "cursor")
-        cursor-left           (-> cursor (.getBoundingClientRect) .-left)
-        cursor-width          (-> cursor (.getBoundingClientRect) .-width)
+        cursor-bounding       (.getBoundingClientRect cursor)
+        cursor-left           (.-left cursor-bounding)
+        cursor-width          (.-width cursor-bounding)
         cursor-midpoint       (+ cursor-left (/ cursor-width 2))
         new-x                 (+ start (* progress-adjusted width))]
     (set! (.. cursor -style -left) (str (max start new-x) "px"))
     (doseq [el (array-seq (js/document.getElementsByClassName "number"))
-            :let [el-left (-> el (.getBoundingClientRect) .-left)
-                  el-width (-> el (.getBoundingClientRect) .-width)
-                  el-midpoint (+ el-left (/ el-width 2))
+            :let [el-bounding         (.getBoundingClientRect el)
+                  el-left             (.-left el-bounding)
+                  el-width            (.-width el-bounding)
+                  el-midpoint         (+ el-left (/ el-width 2))
                   midpoint-difference (- cursor-midpoint el-midpoint)
-                  max-thresh (- width 20)
-                  color (if (-> el .-classList (.contains "denominator"))
-                          (clojure.string/join ", " (take 10 (repeat "0 0 3px rgba(51,51,255,0.2)")))
-                          (clojure.string/join ", " (take 10 (repeat "0 0 3px rgba(255,51,51,0.2)"))))]]
-      (if
-       (or (and (> midpoint-difference -20)
-                (< midpoint-difference 50))
-           (> midpoint-difference max-thresh))
+                  max-thresh          (- width 20)
+                  color               (if
+                                       (-> el .-classList (.contains "denominator"))
+                                        (clojure.string/join
+                                         ", "
+                                         (take 10
+                                               (repeat "0 0 3px rgba(51,51,255,0.2)")))
+                                        (clojure.string/join
+                                         ", "
+                                         (take 10
+                                               (repeat "0 0 3px rgba(255,51,51,0.2)"))))]]
+      (if (or (and (> midpoint-difference -20)
+                   (< midpoint-difference 50))
+              (> midpoint-difference max-thresh))
         (set-el-highlight el color)
         (unset-el-highlight el)))
     (populate-analyser :numerator)
@@ -74,9 +81,11 @@
     (do-beep :top)
     (do-beep :bottom)))
 
-(defn stop-animation
-  []
+(defn stop-animation []
   (js/window.cancelAnimationFrame @raf-id)
   (doseq [el (array-seq (js/document.querySelectorAll ".number,.beep"))]
     (.removeAttribute el "style"))
+  (let [{:keys [start width]} @grid-x
+        cursor                (js/document.getElementById "cursor")]
+    (set! (.. cursor -style -left) (str start "px")))
   (reset! raf-id nil))

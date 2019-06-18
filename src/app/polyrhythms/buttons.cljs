@@ -1,4 +1,4 @@
-(ns app.buttons
+(ns app.polyrhythms.buttons
   (:require [reagent.core :as r]
             [stylefy.core :as stylefy :refer [use-style]]
             [clojure.string :refer [join]]))

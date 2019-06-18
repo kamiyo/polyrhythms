@@ -2,7 +2,7 @@
   (:require [re-frame.core :refer [reg-event-db reg-event-fx reg-fx after debug]]
             [app.db :refer [default-db]]
             [cljs-bach.synthesis :as a]
-            [app.common :refer [get-context-current-time get-seconds-per-beat]]
+            [app.polyrhythms.common :refer [get-context-current-time get-seconds-per-beat]]
             [cljs.spec.alpha :as s]))
 
 (defn check-and-throw
@@ -28,7 +28,9 @@
  [standard-interceptors]
  (fn [cofx [_ new-values]]
    (let [{:keys [divisions which]} new-values]
-     {:db (assoc-in (:db cofx) [which :divisions] (max 1 (js/parseInt divisions)))
+     {:db       (assoc-in (:db cofx)
+                          [which :divisions]
+                          (max 1 (js/parseInt divisions)))
       :dispatch [:change-last-beat-time (get-context-current-time)]})))
 
 (reg-event-db
@@ -42,7 +44,7 @@
  [standard-interceptors]
  (fn [db [_ _]]
    (-> db
-       (assoc-in [:numerator :microbeat] 0)
+       (assoc-in [:numerator   :microbeat] 0)
        (assoc-in [:denominator :microbeat] 0))))
 
 (reg-event-db
@@ -54,7 +56,7 @@
          {den-microbeat :microbeat
           den-divisions :divisions} (:denominator db)]
      (-> db
-         (assoc-in [:numerator :microbeat] (mod num-microbeat num-divisions))
+         (assoc-in [:numerator   :microbeat] (mod num-microbeat num-divisions))
          (assoc-in [:denominator :microbeat] (mod den-microbeat den-divisions))
          (update-in [:last-beat-time] + (get-seconds-per-beat (:tempo db)))))))
 
@@ -85,7 +87,7 @@
  :toggle-playing
  [check-spec-interceptor]
  (fn [db [_]]
-   (assoc db :is-playing? (not (:is-playing? db)))))
+   (update-in db [:is-playing?] not)))
 
 (reg-event-db
  :change-route
@@ -100,7 +102,7 @@
    (assoc db :is-mobile? is-mobile?)))
 
 (reg-event-db
- :change-display
+ :toggle-is-verbose?
  [check-spec-interceptor]
- (fn [db [_ type]]
-   (assoc db :display-type type)))
+ (fn [db [_ _]]
+   (update-in db [:is-verbose?] not)))

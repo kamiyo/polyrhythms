@@ -47,6 +47,6 @@
    (:is-mobile? db)))
 
 (reg-sub
- :display-type
+ :is-verbose?
  (fn [db _]
-   (:display-type db)))
+   (:is-verbose? db)))

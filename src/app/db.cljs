@@ -3,10 +3,8 @@
             [re-frame.core :as re-frame]
             [app.routes :refer [routes]]))
 
-(defonce display-types #{:sequential :cyclical})
-
+(s/def ::is-verbose? boolean?)
 (s/def ::is-mobile? boolean?)
-(s/def ::display-type display-types)
 (s/def ::tempo number?)
 (s/def ::is-playing? boolean?)
 (s/def ::last-beat-time number?)
@@ -30,7 +28,7 @@
            ::tempo
            ::last-beat-time
            ::is-playing?
-           ::display-type]))
+           ::is-verbose?]))
 
 (def default-db
   {:is-mobile? false
@@ -42,4 +40,4 @@
    :last-beat-time 0
    :tempo 60
    :is-playing? false
-   :display-type :sequential})
+   :is-verbose? false})
