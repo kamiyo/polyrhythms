@@ -18,7 +18,8 @@
    :output-dir "public/js"
    :asset-path "/js"
    :modules {:main {:entries [app.core]}}
-   :release {:compiler-options {:infer-externs :auto}}
+   :release {:compiler-options {:infer-externs :auto
+                                :output-feature-set :es6}}
    :devtools {:autoload true
               :before-load app.core/stop
               :after-load app.core/main

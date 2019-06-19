@@ -196,6 +196,7 @@
     input-style
     {:select      true
      :value       value
+     :label       type
      :variant     "outlined"
      :margin      "dense"
      :SelectProps #js {:native true
@@ -322,6 +323,8 @@
       :display-name "cursor"
       :reagent-render (fn []
                         @window-width
+                        @(subscribe [:numerator-divisions])
+                        @(subscribe [:denominator-divisions])
                         [:hr
                          (use-style
                           cursor-style

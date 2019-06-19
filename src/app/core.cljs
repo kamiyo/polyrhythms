@@ -30,6 +30,9 @@
   (.addEventListener ^js @worker "message" listen-worker)
   (.addEventListener ^js js/window "resize" listen-browser)
   (.postMessage ^js @worker (clj->js {:interval lookahead}))
+  (let [mobile? (-> (mobile-detect. js/window.navigator.userAgent) .mobile some?)]
+    (reset! app.polyrhythms.views/window-width (.-innerWidth js/window))
+    (dispatch [:update-is-mobile? mobile?]))
   (r/render [app] (.getElementById js/document "app")))
 
 (stylefy/init
