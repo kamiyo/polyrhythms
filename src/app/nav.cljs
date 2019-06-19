@@ -2,8 +2,10 @@
    (:require [reagent.core :as r]
              [re-frame.core :refer [subscribe]]
              [stylefy.core :as stylefy :refer [use-style]]
+             [app.mui :as mui]
              [app.routes :refer [routes]]
-             [app.styles :refer [navbar-height dark-blue]]))
+             [app.svgs.github :refer [github-svg]]
+             [app.styles :refer [navbar-height light-blue dark-blue]]))
 
 (def menu-ul-style
   {:list-style-type "none"
@@ -23,11 +25,13 @@
    {:hover {:cursor "pointer"}}})
 
 (defn menu-link-style [active?]
-  (let [color (if active? "rgb(10, 66, 96)" "black")]
+  (let [color (if active? dark-blue "black")]
     {:color color
      :text-decoration "none"
+     :transition "all 0.2s"
      ::stylefy/mode {:active {:color color}
-                     :visited {:color color}}}))
+                     :visited {:color color}
+                     :hover {:color light-blue}}}))
 
 (def menu-link-text-style
   {:padding "0.5rem 1rem 0.6rem 1rem"})
@@ -38,12 +42,13 @@
 
 (def github-style
   {:height "40px"
-   :margin-bottom "-10px"})
+   :margin-bottom "-10px"
+   :transition "fill 0.2s"
+   :fill "rgb(0,0,0)"
+   ::stylefy/mode {:hover {:fill light-blue}}})
 
 (defn github-link []
-  [:img (use-style
-         github-style
-         {:src "/images/github-small.svg"})])
+  [github-svg (use-style github-style)])
 
 (defn menu []
   [:ul
@@ -86,7 +91,6 @@
 
 (def navbar-style
   {:height (str navbar-height "px")
-   :box-shadow "rgba(0, 0, 0, 0.3) 0px 0px 6px 1px;"
    :position "fixed"
    :top "0"
    :left "0"
@@ -143,8 +147,10 @@
    :margin-top "0"})
 
 (defn navbar []
-  [:div
-   (use-style navbar-style)
+  [mui/paper
+   (use-style navbar-style
+              {:elevation 4
+               :square true})
    [logo-group
     ^{:key "logo"} [logo-instance (use-style navbar-logo-style)]
     ^{:key "text"} [:div (use-style logo-text-style)

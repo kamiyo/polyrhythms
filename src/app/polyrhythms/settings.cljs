@@ -3,6 +3,7 @@
             [stylefy.core :as stylefy :refer [use-style]]
             [re-frame.core :refer [dispatch subscribe]]
             ["@material-ui/core/Switch" :default Switch]
+            [app.svgs.gear :refer [gear-svg]]
             [app.mui :as mui]
             [app.styles :refer [light-blue light-blue-transparent dark-blue]]))
 
@@ -48,10 +49,9 @@
     (fn []
       (let [is-open? (-> @state :anchor-el some?)]
         [:div (use-style settings-container-style)
-         [:img (use-style
+         [gear-svg (use-style
                 (get-gear-style is-open?)
-                {:src "/images/gear.svg"
-                 :on-click handle-open})]
+                {:on-click handle-open})]
 
          [mui/menu
           {:open                  is-open?

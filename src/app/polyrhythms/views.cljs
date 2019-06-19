@@ -340,7 +340,8 @@
         denominator     @(subscribe [:denominator-divisions])
         total-divisions  (lcm numerator denominator)
         is-playing?     @(subscribe [:is-playing?])]
-    [:div (use-style container-style)
+    [mui/paper (use-style container-style
+                          {:elevation 3})
      [settings-container]
      [:div (use-style metronome-group-style)
       [cursor numerator]
