@@ -201,4 +201,4 @@
     ^{:key "flask"} [:img (use-style flask-style {:src "/images/flask.svg"})]
     ^{:key "sub"} [:div (use-style sub-text-style)
                    [:span {:style {:vertical-align "middle"}} "labs"]]]
-   [mobile-menu]])
+   (if @(subscribe [:is-mobile?]) [mobile-menu] [menu])])
