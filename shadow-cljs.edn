@@ -5,7 +5,7 @@
  :dependencies
  [[binaryage/devtools "0.9.10"]
   [cider/cider-nrepl "0.21.0"]
-  [reagent "0.8.1"]
+  [reagent "0.8.1" :exclusions [cljsjs/react cljsjs/react-dom]]
   [re-frame "0.10.6"]
   [stylefy "1.13.0"]
   [cljs-bach "0.3.0"]

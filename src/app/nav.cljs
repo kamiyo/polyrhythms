@@ -60,7 +60,7 @@
                            (let
                             [[name url] (condp = route
                                           :main ["main site" "https://www.seanchenpiano.com"]
-                                          :github [(github-link) "https://github.com/kamiyo/polyrhythms"]
+                                          :github [(github-link) "https://github.com/kamiyo/labs"]
                                           [(name route) (str "/" (name route))])]
                              [:a
                               (use-style
