@@ -50,3 +50,8 @@
  :is-verbose?
  (fn [db _]
    (:is-verbose? db)))
+
+(reg-sub
+ :lcm
+ (fn [db _]
+   (:lcm db)))

@@ -341,7 +341,7 @@
   []
   (let [numerator       @(subscribe [:numerator-divisions])
         denominator     @(subscribe [:denominator-divisions])
-        total-divisions  (lcm numerator denominator)
+        total-divisions @(subscribe [:lcm])
         is-playing?     @(subscribe [:is-playing?])]
     [mui/paper (use-style container-style
                           {:elevation 3})

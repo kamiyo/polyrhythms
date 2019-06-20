@@ -2,7 +2,7 @@
   (:require [re-frame.core :refer [reg-event-db reg-event-fx reg-fx after debug]]
             [app.db :refer [default-db]]
             [cljs-bach.synthesis :as a]
-            [app.polyrhythms.common :refer [get-context-current-time get-seconds-per-beat]]
+            [app.polyrhythms.common :refer [get-context-current-time get-seconds-per-beat lcm]]
             [cljs.spec.alpha :as s]))
 
 (defn check-and-throw
@@ -27,10 +27,17 @@
  :change-divisions
  [standard-interceptors]
  (fn [cofx [_ new-values]]
-   (let [{:keys [divisions which]} new-values]
-     {:db       (assoc-in (:db cofx)
-                          [which :divisions]
-                          (max 1 (js/parseInt divisions)))
+   (let [{:keys [divisions which]} new-values
+         parsed-int                (max 1 (js/parseInt divisions))
+         db                        (:db cofx)
+         temp                      (assoc
+                                    {:numerator (-> db :numerator :divisions)
+                                     :denominator (-> db :denominator :divisions)}
+                                    which parsed-int)
+         lcm (lcm (:numerator temp) (:denominator temp))]
+     {:db       (-> (:db cofx)
+                    (assoc-in [which :divisions] parsed-int)
+                    (assoc-in [:lcm] lcm))
       :dispatch [:change-last-beat-time (get-context-current-time)]})))
 
 (reg-event-db

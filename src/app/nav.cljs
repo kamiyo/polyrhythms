@@ -24,14 +24,17 @@
    ::stylefy/mode
    {:hover {:cursor "pointer"}}})
 
-(defn menu-link-style [active?]
-  (let [color (if active? dark-blue "black")]
-    {:color color
-     :text-decoration "none"
-     :transition "all 0.2s"
-     ::stylefy/mode {:active {:color color}
-                     :visited {:color color}
-                     :hover {:color light-blue}}}))
+(defn menu-link-style
+  ([active? is-mobile?]
+   (let [color (if active? dark-blue "black")]
+     {:color color
+      :text-align (if is-mobile? "right" "center")
+      :text-decoration "none"
+      :transition "all 0.2s"
+      ::stylefy/mode {:active {:color color}
+                      :visited {:color color}
+                      :hover {:color light-blue}}}))
+  ([active?] (menu-link-style active? false)))
 
 (def menu-link-text-style
   {:padding "0.5rem 1rem 0.6rem 1rem"})
@@ -40,15 +43,18 @@
   {:background-color (if active? "rgb(78, 134, 164)" "none")
    :height "5px"})
 
-(def github-style
-  {:height "40px"
-   :margin-bottom "-10px"
+(defn github-style [is-mobile?]
+  {:height (if is-mobile? "28px" "40px")
+   :margin-bottom (if is-mobile? "0" "-10px")
+   :vertical-align (if is-mobile? "middle" "unset")
    :transition "fill 0.2s"
    :fill "rgb(0,0,0)"
    ::stylefy/mode {:hover {:fill light-blue}}})
 
-(defn github-link []
-  [github-svg (use-style github-style)])
+(defn github-link
+  ([is-mobile?]
+   [github-svg (use-style (github-style is-mobile?))])
+  ([] (github-link false)))
 
 (defn menu []
   [:ul
@@ -65,7 +71,9 @@
                              [:a
                               (use-style
                                (menu-link-style active?)
-                               {:href url})
+                               {:href   url
+                                :target "_blank"
+                                :rel    "noopener"})
                               [:div
                                (use-style
                                 menu-link-text-style)
@@ -73,6 +81,41 @@
                               [:div
                                (use-style
                                 (get-highlight-style active?))]])]))])
+
+
+
+(defn mobile-menu []
+  (let [state (r/atom {:open? false})
+        toggle-drawer (fn [e]
+                        (swap! state assoc :open? e))]
+    (fn []
+      (let [is-open? (:open? @state)]
+        [:<>
+         [mui/icon-button {:on-click #(toggle-drawer true)}
+          [mui/menu-icon (use-style {:height "50px"
+                                     :width "50px"
+                                     :color dark-blue})]]
+         [mui/drawer {:open is-open?
+                      :anchor "right"
+                      :on-close #(toggle-drawer false)}
+          [:div {:on-click #(toggle-drawer false)
+                 :on-key-down #(toggle-drawer false)
+                 :role "presentation"}
+           [mui/mlist
+            (doall (for [route routes
+                         :let [active? (= @(subscribe [:route]) route)
+                               [name url] (condp = route
+                                            :main ["main site" "https://www.seanchenpiano.com"]
+                                            :github [(github-link true) "https://github.com/kamiyo/labs"]
+                                            [(name route) (str "/" (name route))])]]
+                     ^{:key route} [mui/mlist-item
+                                    (use-style (menu-link-style active? true)
+                                               {:button true
+                                                :selected active?
+                                                :component "a"
+                                                :href url})
+                                    [mui/mlist-item-text
+                                     name]]))]]]]))))
 
 (defn logo-svg []
   [:svg {:style {:display "none"}}
@@ -98,7 +141,8 @@
    :background-color "white"
    :color dark-blue
    :display "flex"
-   :align-items "flex-start"
+   :flex-direction "row"
+   :align-items "flex-start" ; Change for mobile
    :justify-content "space-between"
    :font-family "lato-light, sans-serif"
    :letter-spacing "0.05rem"
@@ -147,10 +191,9 @@
    :margin-top "0"})
 
 (defn navbar []
-  [mui/paper
+  [mui/app-bar
    (use-style navbar-style
-              {:elevation 4
-               :square true})
+              {:position "fixed"})
    [logo-group
     ^{:key "logo"} [logo-instance (use-style navbar-logo-style)]
     ^{:key "text"} [:div (use-style logo-text-style)
@@ -158,4 +201,4 @@
     ^{:key "flask"} [:img (use-style flask-style {:src "/images/flask.svg"})]
     ^{:key "sub"} [:div (use-style sub-text-style)
                    [:span {:style {:vertical-align "middle"}} "labs"]]]
-   [menu]])
+   [mobile-menu]])

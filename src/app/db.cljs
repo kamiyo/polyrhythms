@@ -1,6 +1,7 @@
 (ns app.db
   (:require [cljs.spec.alpha :as s]
             [re-frame.core :as re-frame]
+            [app.polyrhythms.common :refer [lcm]]
             [app.routes :refer [routes]]))
 
 (s/def ::is-verbose? boolean?)
@@ -25,6 +26,7 @@
            ::route
            ::numerator
            ::denominator
+           ::lcm
            ::tempo
            ::last-beat-time
            ::is-playing?
@@ -37,6 +39,7 @@
                :microbeat 0}
    :denominator {:divisions 2
                  :microbeat 0}
+   :lcm (lcm 3 2)
    :last-beat-time 0
    :tempo 60
    :is-playing? false
