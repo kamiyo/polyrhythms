@@ -2,7 +2,7 @@
   (:require [reagent.core :as r]
             [reagent.impl.template :as rtpl]
             [app.polyrhythms.sound :refer [play]]
-            [app.styles :refer [light-blue]]
+            [app.styles :refer [light-blue navbar-height]]
             [app.mui :as mui]
             [app.polyrhythms.common :refer [lcm]]
             [app.polyrhythms.common :refer [context grid-x]]
@@ -12,27 +12,27 @@
             [re-frame.core :refer [subscribe dispatch]]
             [clojure.string :refer [join]]))
 
-(defonce window-width (r/atom nil))
-
 (defn- get-ticks-children-style
   [idx idy span num]
   (let [column-start (-> idx (* span) (+ 2))
         bottom?      (= 1 idy)]
-    {:grid-column    (str column-start " / span " span)
-     :grid-row       (inc idy)
-     :border-left    (if (zero? idx)
+    {:grid-column  (str column-start " / span " span)
+     :grid-row     (inc idy)
+     :border-left  (if (zero? idx)
                        "solid 2px black"
                        "solid 1px black")
-     :border-right   (if (= idx (dec num))
+     :border-right (if (= idx (dec num))
                        "solid 2px black"
                        "solid 1px black")
-     (if bottom? :border-bottom :border-top) "solid 1px black"}))
+     (if bottom?
+       :border-bottom
+       :border-top) "solid 1px black"}))
 
 (defn- generate-ticks
   [ticks total which]
-  (let [y (condp = which
-            :numerator 1
-            :denominator 2)
+  (let [y    (condp = which
+               :numerator 1
+               :denominator 2)
         span (/ total ticks)]
     [:<>
      (doall
@@ -158,23 +158,24 @@
 (def selector-style
   {:flex "0 1 auto"})
 
-(def mui-override-style
+(defn- mui-override-style [is-mobile?]
   [[:label.Mui-focused {:color light-blue}]
    [:.MuiOutlinedInput-root.Mui-focused
     [:.MuiOutlinedInput-notchedOutline {:border-color light-blue
-                                        :color light-blue}]]])
+                                        :color light-blue}]]
+   (if is-mobile? [:.MuiOutlinedInput-inputMarginDense {:padding "0.5rem"}])])
 
-(def input-style
+(defn- input-style [is-mobile?]
   {:margin          "0 1rem"
    :width           "6rem"
    :scrollbar-width "thin"
-   ::stylefy/manual mui-override-style})
+   ::stylefy/manual (mui-override-style is-mobile?)})
 
-(defn desktop-number-input
+(defn- desktop-number-input
   [type value]
   [mui/text-field
    (use-style
-    input-style
+    (input-style false)
     {:type  "number"
      :label (str (name type) ":")
      :name  (name type)
@@ -193,7 +194,7 @@
   [type value]
   [mui/text-field
    (use-style
-    input-style
+    (input-style true)
     {:select      true
      :value       value
      :label       type
@@ -217,28 +218,38 @@
      (mobile-number-select type value)
      (desktop-number-input type value))])
 
-(def control-group-style
+(defn- control-group-style [is-mobile?]
   {:display         "flex"
    :justify-content "space-evenly"
-   :margin-bottom   "2rem"})
+   :margin-bottom   (if is-mobile? "0" "2rem")})
+
+(defn- lcm-display-style [is-mobile?]
+  {:margin-top "0"
+   :margin-bottom "0"
+   ::stylefy/manual (mui-override-style is-mobile?)})
+
+(defn lcm-display [total-divisions]
+  (let [is-mobile? @(subscribe [:is-mobile?])]
+    [mui/text-field
+     (use-style (lcm-display-style is-mobile?)
+                {:type "number"
+                 :label "least common multiple"
+                 :value total-divisions
+                 :variant "outlined"
+                 :margin "dense"
+                 :disabled true})]))
 
 (defn control-group
   [numerator denominator total-divisions]
-  [:div (use-style control-group-style)
+  [:div (use-style (control-group-style @(subscribe [:is-mobile?])))
    (selector :numerator numerator)
-   [mui/text-field
-    {:type "number"
-     :label "least common multiple"
-     :value total-divisions
-     :variant "outlined"
-     :margin "dense"
-     :disabled true}]
+   (lcm-display total-divisions)
    (selector :denominator denominator)])
 
 (def tempo-group-style
   {:display         "flex"
    :justify-content "center"
-   ::stylefy/manual mui-override-style})
+   ::stylefy/manual (mui-override-style false)})
 
 (def tempo-input-style
   {:margin "0 1rem"})
@@ -265,22 +276,32 @@
         :onChange #(dispatch [:change-tempo (.. % -target -value)])
         :onBlur   #(dispatch [:change-tempo (.. % -target -value)])})]]))
 
-(def container-style
-  {:margin-top       (str (+ 32 app.styles/navbar-height) "px")
-   :padding-bottom   "5rem"
-   :background-color "#fafafa"
-   :box-shadow       "2px 2px 5px rgba(0,0,0,0.6)"
-   :border-radius    "5px"
-   :font-family      "lato-light, sans-serif"})
+(defn- container-style [is-mobile?]
+  (let [k            (if is-mobile? :mobile :desktop)
+        margin-extra (if is-mobile? 16 32)
+        margin-top   (str (+ (k navbar-height) margin-extra) "px")
+        padding-bottom (if is-mobile? "1rem" "5rem")
+        mobile-height (str "calc(100vh - " margin-top " - " padding-bottom ")")]
+    {:margin-top       margin-top
+     :padding-bottom   (if is-mobile? "1rem" "5rem")
+     :background-color "#fafafa"
+     :box-shadow       "2px 2px 5px rgba(0,0,0,0.6)"
+     :border-radius    "5px"
+     :font-family      "lato-light, sans-serif"
+     :box-sizing       "border-box"
+     :height           (if is-mobile? mobile-height "unset")}))
 
-(def metronome-group-style
-  {:padding "0 5rem"})
+(defn- metronome-group-style [is-mobile?]
+  {:padding (if is-mobile? "0" "0 5rem")})
 
 (defn- get-grid-style
   [least-common-multiple]
   {:display               "grid"
-   :grid-template-columns (str "repeat(" (+ least-common-multiple 2) ", 1fr)")
-   :grid-template-rows    (str "3.2rem 1.5rem 1.5rem 3.2rem")})
+   :grid-template-columns (str "repeat(" (+ least-common-multiple 2) ", minmax(0, 1fr))")
+   ;:grid-template-rows    (str "3.2rem 1.5rem 1.5rem 3.2rem")
+   :grid-template-rows    (str "minmax(0, 4fr) minmax(0, 3fr) minmax(0, 3fr) minmax(0, 4fr)")
+   
+   })
 
 (defn handle-play-click
   [event]
@@ -322,7 +343,7 @@
                               @!ref num-divisions cursor-width)
       :display-name "cursor"
       :reagent-render (fn []
-                        @window-width
+                        @(subscribe [:viewport-width])
                         @(subscribe [:numerator-divisions])
                         @(subscribe [:denominator-divisions])
                         [:hr
@@ -342,29 +363,36 @@
   (let [numerator       @(subscribe [:numerator-divisions])
         denominator     @(subscribe [:denominator-divisions])
         total-divisions @(subscribe [:lcm])
-        is-playing?     @(subscribe [:is-playing?])]
-    [mui/paper (use-style container-style
-                          {:elevation 3})
-     [settings-container]
-     [:div (use-style metronome-group-style)
-      [cursor numerator]
-      [control-group numerator denominator total-divisions]
-      [:div (use-style (get-grid-style total-divisions) {:id "grid"})
-       [generate-numbers {:ticks numerator
-                          :total total-divisions
-                          :which :numerator
-                          :class "number numerator"}]
-       [generate-ticks numerator total-divisions :numerator]
-       [generate-ticks denominator total-divisions :denominator]
-       [generate-numbers {:ticks denominator
-                          :total total-divisions
-                          :which :denominator
-                          :class "number denominator"}]
-       [generate-minor-ticks total-divisions numerator denominator]
-       [generate-visual-beep total-divisions]]
-      [:div
-       (use-style {:text-align "center"})
-       (if is-playing?
-         [pause-button handle-play-click]
-         [play-button  handle-play-click])]
-      [tempo-control]]]))
+        is-playing?     @(subscribe [:is-playing?])
+        is-mobile?      @(subscribe [:is-mobile?])
+        is-portrait?    @(subscribe [:is-portrait?])]
+    [:<>
+     [mui/dialog {:open (and is-mobile? is-portrait?)}
+      [mui/dialog-title "Rotate to Landscape"]
+      [mui/dialog-content
+       [mui/dialog-content-text "The polyrhythm metronome layout works best in landscape mode."]]]
+     [mui/paper (use-style (container-style @(subscribe [:is-mobile?]))
+                           {:elevation 3})
+      [settings-container]
+      [:div (use-style (metronome-group-style is-mobile?))
+       [cursor numerator]
+       [control-group numerator denominator total-divisions]
+       [:div (use-style (get-grid-style total-divisions) {:id "grid"})
+        [generate-numbers {:ticks numerator
+                           :total total-divisions
+                           :which :numerator
+                           :class "number numerator"}]
+        [generate-ticks numerator total-divisions :numerator]
+        [generate-ticks denominator total-divisions :denominator]
+        [generate-numbers {:ticks denominator
+                           :total total-divisions
+                           :which :denominator
+                           :class "number denominator"}]
+        [generate-minor-ticks total-divisions numerator denominator]
+        [generate-visual-beep total-divisions]]
+       [:div
+        (use-style {:text-align "center"})
+        (if is-playing?
+          [pause-button handle-play-click]
+          [play-button  handle-play-click])]
+       [tempo-control]]]]))

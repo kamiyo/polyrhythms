@@ -44,7 +44,17 @@
 (reg-sub
  :is-mobile?
  (fn [db _]
-   (:is-mobile? db)))
+   (get-in db [:layout :is-mobile?])))
+
+(reg-sub
+ :is-portrait?
+ (fn [db _]
+   (get-in db [:layout :is-portrait?])))
+
+(reg-sub
+ :viewport-width
+ (fn [db _]
+   (get-in db [:layout :width])))
 
 (reg-sub
  :is-verbose?

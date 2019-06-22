@@ -103,10 +103,10 @@
    (assoc db :route route)))
 
 (reg-event-db
- :update-is-mobile?
+ :update-layout
  [check-spec-interceptor]
- (fn [db [_ is-mobile?]]
-   (assoc db :is-mobile? is-mobile?)))
+ (fn [db [_ values-map]]
+   (update db :layout merge values-map)))
 
 (reg-event-db
  :toggle-is-verbose?

@@ -8,7 +8,7 @@
             [app.nav]
             [app.events]
             [app.views :refer [app]]
-            [app.polyrhythms.sound :refer [lookahead]]
+            [app.polyrhythms.sound :refer [lookahead scheduler]]
             [app.polyrhythms.animation]
             [stylefy.core :as stylefy]
             ["mobile-detect" :as mobile-detect]))
@@ -16,13 +16,19 @@
 (defn listen-worker
   [^js e]
   (when (= (.-data e) "tick")
-    (app.polyrhythms.sound/scheduler)))
+    (scheduler)))
 
 (defn listen-browser
   [^js e]
-  (let [mobile? (-> (mobile-detect. js/window.navigator.userAgent) .mobile some?)]
-    (reset! app.polyrhythms.views/window-width (.-innerWidth js/window))
-    (dispatch [:update-is-mobile? mobile?])))
+  (let [mobile? (-> (mobile-detect. js/window.navigator.userAgent) .mobile some?)
+        innerWidth (.-innerWidth js/window)
+        innerHeight (.-innerHeight js/window)
+        ratio (/ innerWidth innerHeight)]
+    (dispatch [:update-layout
+               {:is-mobile? mobile?
+                :width innerWidth
+                :height innerHeight
+                :is-portrait? (<= ratio 1)}])))
 
 (defn start []
   (init-audio)
@@ -30,9 +36,7 @@
   (.addEventListener ^js @worker "message" listen-worker)
   (.addEventListener ^js js/window "resize" listen-browser)
   (.postMessage ^js @worker (clj->js {:interval lookahead}))
-  (let [mobile? (-> (mobile-detect. js/window.navigator.userAgent) .mobile some?)]
-    (reset! app.polyrhythms.views/window-width (.-innerWidth js/window))
-    (dispatch [:update-is-mobile? mobile?]))
+  (listen-browser nil)
   (r/render [app] (.getElementById js/document "app")))
 
 (stylefy/init

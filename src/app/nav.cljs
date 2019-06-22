@@ -7,13 +7,13 @@
              [app.svgs.github :refer [github-svg]]
              [app.styles :refer [navbar-height light-blue dark-blue]]))
 
-(def menu-ul-style
+(defn menu-ul-style [is-mobile?]
   {:list-style-type "none"
    :user-select "none"
    :text-transform "uppercase"
    :margin "0 1rem 0 0"
    :display "flex"
-   :height (str navbar-height "px")})
+   :height (str ((if is-mobile? :mobile :desktop) navbar-height) "px")})
 
 (def menu-li-style
   {:display "inline-flex"
@@ -58,7 +58,7 @@
 
 (defn menu []
   [:ul
-   (use-style menu-ul-style)
+   (use-style (menu-ul-style @(subscribe [:is-mobile?])))
    (doall (for [route routes
                 :let [active? (= @(subscribe [:route]) route)]]
             ^{:key route} [:li
@@ -67,13 +67,16 @@
                             [[name url] (condp = route
                                           :main ["main site" "https://www.seanchenpiano.com"]
                                           :github [(github-link) "https://github.com/kamiyo/labs"]
-                                          [(name route) (str "/" (name route))])]
+                                          [(name route) (str "/" (name route))])
+                             props      (condp contains? route
+                                          #{:github :main} {:href url
+                                                            :target "_blank"
+                                                            :rel "noopener"}
+                                          {:href url})]
                              [:a
                               (use-style
                                (menu-link-style active?)
-                               {:href   url
-                                :target "_blank"
-                                :rel    "noopener"})
+                               props)
                               [:div
                                (use-style
                                 menu-link-text-style)
@@ -81,8 +84,6 @@
                               [:div
                                (use-style
                                 (get-highlight-style active?))]])]))])
-
-
 
 (defn mobile-menu []
   (let [state (r/atom {:open? false})
@@ -93,29 +94,34 @@
         [:<>
          [mui/icon-button {:on-click #(toggle-drawer true)}
           [mui/menu-icon (use-style {:height "50px"
-                                     :width "50px"
-                                     :color dark-blue})]]
-         [mui/drawer {:open is-open?
-                      :anchor "right"
+                                     :width  "50px"
+                                     :color  dark-blue})]]
+         [mui/drawer {:open     is-open?
+                      :anchor   "right"
                       :on-close #(toggle-drawer false)}
-          [:div {:on-click #(toggle-drawer false)
+          [:div {:on-click    #(toggle-drawer false)
                  :on-key-down #(toggle-drawer false)
-                 :role "presentation"}
+                 :role        "presentation"}
            [mui/mlist
             (doall (for [route routes
-                         :let [active? (= @(subscribe [:route]) route)
-                               [name url] (condp = route
-                                            :main ["main site" "https://www.seanchenpiano.com"]
-                                            :github [(github-link true) "https://github.com/kamiyo/labs"]
-                                            [(name route) (str "/" (name route))])]]
+                         :let  [active?    (= @(subscribe [:route]) route)
+                                [name url] (condp = route
+                                             :main   ["main site" "https://www.seanchenpiano.com"]
+                                             :github [(github-link true) "https://github.com/kamiyo/labs"]
+                                                     [(name route) (str "/" (name route))])
+                                props      (condp contains? route
+                                             #{:github :main} {:href url
+                                                               :target "_blank"
+                                                               :rel "noopener"}
+                                             {:href url})]]
                      ^{:key route} [mui/mlist-item
-                                    (use-style (menu-link-style active? true)
-                                               {:button true
-                                                :selected active?
-                                                :component "a"
-                                                :href url})
-                                    [mui/mlist-item-text
-                                     name]]))]]]]))))
+                                    (use-style
+                                     (menu-link-style active? true)
+                                     (merge props
+                                            {:button true
+                                             :selected active?
+                                             :component "a"}))
+                                    [mui/mlist-item-text name]]))]]]]))))
 
 (defn logo-svg []
   [:svg {:style {:display "none"}}
@@ -132,8 +138,9 @@
           :viewBox "0 0 120 120"})
    [:use {:xlinkHref "#logo-template"}]])
 
-(def navbar-style
-  {:height (str navbar-height "px")
+(defn navbar-style
+  [is-mobile?]
+  {:height (str ((if is-mobile? :mobile :desktop) navbar-height) "px")
    :position "fixed"
    :top "0"
    :left "0"
@@ -142,22 +149,23 @@
    :color dark-blue
    :display "flex"
    :flex-direction "row"
-   :align-items "flex-start" ; Change for mobile
+   :align-items (if is-mobile? "center" "flex-start")
    :justify-content "space-between"
    :font-family "lato-light, sans-serif"
    :letter-spacing "0.05rem"
    :z-index "1000"})
 
-(def navbar-logo-style
-  {:width "150px"
-   :height "150px"
-   :float "left"
-   :fill dark-blue
-   :-webkit-tap-highlight-color "transparent"})
+(defn navbar-logo-style [is-mobile?]
+  (let [dim (if is-mobile? "120px" "150px")]
+    {:width dim
+     :height dim
+     :flex "0 0 auto"
+     :fill dark-blue
+     :-webkit-tap-highlight-color "transparent"}))
 
 (def logo-group-style
   {:display "inline-flex"
-   :flex "1 1 auto"
+   :flex "0 1 auto"
    :height "100%"
    :align-items "center"
    :overflow "hidden"})
@@ -166,8 +174,8 @@
   [:div (use-style logo-group-style)
    children])
 
-(def logo-text-style
-  (let [height (str app.styles/navbar-height "px")]
+(defn- logo-text-style [is-mobile?]
+  (let [height (str ((if is-mobile? :mobile :desktop) navbar-height) "px")]
     {:display "inline-block"
      :font-size "2.5rem"
      :margin-left "1.5rem"
@@ -176,8 +184,8 @@
      :height height
      :text-transform "uppercase"}))
 
-(def sub-text-style
-  (let [height (str navbar-height "px")]
+(defn- sub-text-style [is-mobile?]
+  (let [height (str ((if is-mobile? :mobile :desktop) navbar-height) "px")]
     {:display "inline-block"
      :vertical-align "middle"
      :font-size "1.8rem"
@@ -185,20 +193,26 @@
      :line-height height
      :height height}))
 
-(def flask-style
-  {:height "60px"
-   :margin "0.8rem"
+(defn- flask-style [is-mobile?]
+  {:height (if is-mobile? "50px" "60px")
+   :margin (if is-mobile? "0.4rem" "0.8rem")
    :margin-top "0"})
 
 (defn navbar []
-  [mui/app-bar
-   (use-style navbar-style
-              {:position "fixed"})
-   [logo-group
-    ^{:key "logo"} [logo-instance (use-style navbar-logo-style)]
-    ^{:key "text"} [:div (use-style logo-text-style)
-                    [:span {:style {:vertical-align "middle"}} "SEAN CHEN"]]
-    ^{:key "flask"} [:img (use-style flask-style {:src "/images/flask.svg"})]
-    ^{:key "sub"} [:div (use-style sub-text-style)
-                   [:span {:style {:vertical-align "middle"}} "labs"]]]
-   (if @(subscribe [:is-mobile?]) [mobile-menu] [menu])])
+  (let [is-mobile? @(subscribe [:is-mobile?])
+        is-portrait? @(subscribe [:is-portrait?])]
+    [mui/app-bar
+     (use-style (navbar-style is-mobile?)
+                {:position "fixed"})
+     [logo-group
+      ^{:key "logo"} [logo-instance (use-style (navbar-logo-style is-mobile?))]
+      (when-not is-portrait?
+        ^{:key "text"} [:div (use-style (logo-text-style is-mobile?))
+                        [:span {:style
+                                {:vertical-align "middle"}}
+                         "SEAN CHEN"]])
+      ^{:key "flask"} [:img (use-style (flask-style is-mobile?)
+                                       {:src "/images/flask.svg"})]
+      ^{:key "sub"} [:div (use-style (sub-text-style is-mobile?))
+                     [:span {:style {:vertical-align "middle"}} "labs"]]]
+     (if is-mobile? [mobile-menu] [menu])]))

@@ -7,10 +7,10 @@
             [app.mui :as mui]
             [app.styles :refer [light-blue light-blue-transparent dark-blue]]))
 
-(def settings-container-style
+(defn- settings-container-style [is-mobile?]
   {:display         "flex"
    :justify-content "flex-end"
-   :margin-bottom   "3rem"})
+   :margin-bottom   (if is-mobile? "0" "3rem")})
 
 (defn- get-gear-style
   [is-open?]
@@ -48,7 +48,7 @@
         handle-close #(swap! state assoc :anchor-el nil)]
     (fn []
       (let [is-open? (-> @state :anchor-el some?)]
-        [:div (use-style settings-container-style)
+        [:div (use-style (settings-container-style @(subscribe [:is-mobile?])))
          [gear-svg (use-style
                 (get-gear-style is-open?)
                 {:on-click handle-open})]

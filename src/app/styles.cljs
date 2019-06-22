@@ -1,7 +1,8 @@
 (ns app.styles
   (:require [stylefy.core :refer [font-face]]))
 
-(defonce navbar-height 80)
+(defonce navbar-height {:mobile  60
+                        :desktop 80})
 
 (defonce light-blue "rgb(78, 134, 164)")
 (defonce light-blue-transparent "rgb(78, 134, 164, 0.08)")

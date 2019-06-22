@@ -5,7 +5,10 @@
             [app.routes :refer [routes]]))
 
 (s/def ::is-verbose? boolean?)
+(s/def ::is-portrait? boolean?)
 (s/def ::is-mobile? boolean?)
+(s/def ::width number?)
+(s/def ::height number?)
 (s/def ::tempo number?)
 (s/def ::is-playing? boolean?)
 (s/def ::last-beat-time number?)
@@ -16,13 +19,20 @@
           [::divisions
            ::microbeat]))
 
+(s/def ::layout
+  (s/keys :req-un
+          [::is-portrait?
+           ::is-mobile?
+           ::width
+           ::height]))
+
 (s/def ::numerator ::subdivision)
 (s/def ::denominator ::subdivision)
 (s/def ::route (set routes))
 
 (s/def ::db
   (s/keys :req-un
-          [::is-mobile?
+          [::layout
            ::route
            ::numerator
            ::denominator
@@ -33,7 +43,11 @@
            ::is-verbose?]))
 
 (def default-db
-  {:is-mobile? false
+  {:layout 
+   {:is-mobile? false
+    :is-portrait? false
+    :width 0
+    :height 0}
    :route :polyrhythms
    :numerator {:divisions 3
                :microbeat 0}
