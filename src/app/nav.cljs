@@ -5,7 +5,7 @@
              [app.mui :as mui]
              [app.routes :refer [routes]]
              [app.svgs.github :refer [github-svg]]
-             [app.styles :refer [navbar-height light-blue dark-blue]]))
+             [app.styles :refer [get-navbar-height light-blue dark-blue]]))
 
 (defn menu-ul-style [is-mobile?]
   {:list-style-type "none"
@@ -13,7 +13,7 @@
    :text-transform "uppercase"
    :margin "0 1rem 0 0"
    :display "flex"
-   :height (str ((if is-mobile? :mobile :desktop) navbar-height) "px")})
+   :height (str (get-navbar-height is-mobile?) "px")})
 
 (def menu-li-style
   {:display "inline-flex"
@@ -93,8 +93,8 @@
       (let [is-open? (:open? @state)]
         [:<>
          [mui/icon-button {:on-click #(toggle-drawer true)}
-          [mui/menu-icon (use-style {:height "50px"
-                                     :width  "50px"
+          [mui/menu-icon (use-style {:height "2rem"
+                                     :width  "2rem"
                                      :color  dark-blue})]]
          [mui/drawer {:open     is-open?
                       :anchor   "right"
@@ -108,7 +108,7 @@
                                 [name url] (condp = route
                                              :main   ["main site" "https://www.seanchenpiano.com"]
                                              :github [(github-link true) "https://github.com/kamiyo/labs"]
-                                                     [(name route) (str "/" (name route))])
+                                             [(name route) (str "/" (name route))])
                                 props      (condp contains? route
                                              #{:github :main} {:href url
                                                                :target "_blank"
@@ -140,7 +140,7 @@
 
 (defn navbar-style
   [is-mobile?]
-  {:height (str ((if is-mobile? :mobile :desktop) navbar-height) "px")
+  {:height (str (get-navbar-height is-mobile?) "px")
    :position "fixed"
    :top "0"
    :left "0"
@@ -156,7 +156,7 @@
    :z-index "1000"})
 
 (defn navbar-logo-style [is-mobile?]
-  (let [dim (if is-mobile? "120px" "150px")]
+  (let [dim (if is-mobile? "100px" "150px")]
     {:width dim
      :height dim
      :flex "0 0 auto"
@@ -175,27 +175,28 @@
    children])
 
 (defn- logo-text-style [is-mobile?]
-  (let [height (str ((if is-mobile? :mobile :desktop) navbar-height) "px")]
+  (let [height (str (get-navbar-height is-mobile?) "px")]
     {:display "inline-block"
-     :font-size "2.5rem"
-     :margin-left "1.5rem"
+     :font-size (if is-mobile? "1.8rem" "2.5rem")
+     :margin-left (if is-mobile? "0.8rem" "1.5rem")
+     :letter-spacing (if is-mobile? "0.05rem" "0.08rem")
      :vertical-align "middle"
      :line-height height
      :height height
      :text-transform "uppercase"}))
 
 (defn- sub-text-style [is-mobile?]
-  (let [height (str ((if is-mobile? :mobile :desktop) navbar-height) "px")]
+  (let [height (str (get-navbar-height is-mobile?) "px")]
     {:display "inline-block"
      :vertical-align "middle"
-     :font-size "1.8rem"
+     :font-size (if is-mobile? "1.5rem" "1.8rem")
      :text-transform "uppercase"
      :line-height height
      :height height}))
 
 (defn- flask-style [is-mobile?]
-  {:height (if is-mobile? "50px" "60px")
-   :margin (if is-mobile? "0.4rem" "0.8rem")
+  {:height (if is-mobile? "40px" "60px")
+   :margin (if is-mobile? "0.2rem" "0.8rem")
    :margin-top "0"})
 
 (defn navbar []

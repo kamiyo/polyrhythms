@@ -8,9 +8,15 @@
             [app.styles :refer [light-blue light-blue-transparent dark-blue]]))
 
 (defn- settings-container-style [is-mobile?]
-  {:display         "flex"
-   :justify-content "flex-end"
-   :margin-bottom   (if is-mobile? "0" "3rem")})
+  (merge
+   (if is-mobile?
+     {:position "absolute"
+      :right "0"}
+     {:display         "flex"
+      :justify-content "flex-end"
+      :flex            "0 0 0"})
+   {:margin-bottom   (if is-mobile? "0" "3rem")
+    :height          (if is-mobile? "0.5rem" "100%")}))
 
 (defn- get-gear-style
   [is-open?]
@@ -50,8 +56,8 @@
       (let [is-open? (-> @state :anchor-el some?)]
         [:div (use-style (settings-container-style @(subscribe [:is-mobile?])))
          [gear-svg (use-style
-                (get-gear-style is-open?)
-                {:on-click handle-open})]
+                    (get-gear-style is-open?)
+                    {:on-click handle-open})]
 
          [mui/menu
           {:open                  is-open?
